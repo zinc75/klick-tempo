@@ -1,0 +1,25 @@
+.DS_Store
+
+# release archives (the README of each tool gives the URL and the SHA-256)
+*.tar.*
+
+# build products and test copies (anchored: upstream/ trees may contain directories of the same name)
+/build/
+/*/build/
+/libs/build/
+/*/swiftui/build/
+/libs/*/build/
+/out/
+/*/out/
+/libs/*/out/
+*.o
+*.a
+*.dylib
+*.app/
+*.pkg
+
+# Swift / Xcode
+.build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
