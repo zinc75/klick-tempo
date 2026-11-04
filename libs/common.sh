@@ -1,0 +1,85 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# Helpers sourced by libs/<name>/build_universal.sh. Nothing here is derived from a library.
+#
+# Layout of the output directory (default libs/build, ignored by git):
+#   <out>/arm64/      per-architecture install prefix (headers, .a, pkgconfig)
+#   <out>/x86_64/     same, for Intel
+#   <out>/universal/  static libraries joined with lipo, and the headers
+#
+# Needs: clang, make, lipo, strip, patch and pkg-config (Xcode command line tools, plus pkg-config),
+# and Rosetta to run the configure tests of the x86_64 build on Apple Silicon.
+# MACOSX_DEPLOYMENT_TARGET defaults to 11.0.
+#
+# Nothing is installed outside <out>. Sources are copied to a temporary directory,
+# upstream/ is never written to. Build with a clean environment: exported
+# CFLAGS / LDFLAGS and Homebrew's pkg-config path are ignored on purpose.
+
+ub_setup() {  # $1 = upstream directory, $2 = output directory
+  UB_SRC=$(cd "$1" && pwd)
+  UB_PATCHES=$(dirname "$UB_SRC")/patches
+  mkdir -p "$2"
+  UB_OUT=$(cd "$2" && pwd)
+  UB_ARCHS="arm64 x86_64"
+  UB_JOBS=$(sysctl -n hw.ncpu)
+  : "${MACOSX_DEPLOYMENT_TARGET:=11.0}"
+  export MACOSX_DEPLOYMENT_TARGET
+  UB_WORK=$(mktemp -d)
+  trap 'rm -rf "$UB_WORK"' EXIT
+}
+
+# Run a command with the environment cleaned of inherited build flags and with a
+# compiler, flags and pkg-config search path restricted to the prefix of one architecture.
+ub_env() {  # $1 = arch, then the command
+  local arch=$1 prefix; shift
+  prefix=$UB_OUT/$arch
+  env -u LDFLAGS -u CFLAGS -u CXXFLAGS -u CPPFLAGS -u PKG_CONFIG_PATH -u LIBRARY_PATH -u CPATH \
+    CC="clang -arch $arch" CXX="clang++ -arch $arch" \
+    CFLAGS="-O2" CXXFLAGS="-O2" CPPFLAGS="-I$prefix/include" LDFLAGS="-L$prefix/lib" \
+    PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig" \
+    "$@"
+}
+
+# Apply patches/*.patch (unified diffs relative to upstream/) to a copy of the sources.
+ub_patch() {  # $1 = directory holding the copy
+  local p
+  for p in "$UB_PATCHES"/*.patch; do
+    [ -e "$p" ] || continue
+    patch -p1 -s -d "$1" < "$p"
+  done
+}
+
+# Copy the sources for one architecture, configure with autotools, build, install.
+# Extra arguments are passed to ./configure (after the common static-only options).
+ub_autotools() {  # $1 = arch, then configure arguments
+  local arch=$1 dir host=""; shift
+  dir=$UB_WORK/$arch
+  rm -rf "$dir"; cp -R "$UB_SRC" "$dir"
+  ub_patch "$dir"
+  # The native architecture builds natively; the other one is configured as a cross
+  # build (config.guess would otherwise pick the CPU-specific code of the host). The
+  # test programs of configure still run, under Rosetta.
+  [ "$arch" = "$(uname -m)" ] || host="--host=${arch}-apple-darwin"
+  ( cd "$dir"
+    ub_env "$arch" ./configure $host --prefix="$UB_OUT/$arch" \
+      --disable-shared --enable-static "$@"
+    ub_env "$arch" make -j"$UB_JOBS"
+    ub_env "$arch" make install )
+}
+
+# Join the per-architecture static libraries into universal ones and copy the headers.
+ub_merge() {
+  local a n
+  mkdir -p "$UB_OUT/universal/lib" "$UB_OUT/universal/include"
+  for a in "$UB_OUT"/arm64/lib/*.a; do
+    n=$(basename "$a")
+    [ -f "$UB_OUT/x86_64/lib/$n" ] || { echo "missing in x86_64: $n" >&2; return 1; }
+    lipo -create "$a" "$UB_OUT/x86_64/lib/$n" -output "$UB_OUT/universal/lib/$n"
+    # Debug information would carry the paths of this machine into the binaries.
+    strip -S "$UB_OUT/universal/lib/$n" 2>&1 | grep -v "already stripped" || true
+  done
+  # Public headers must not depend on the architecture.
+  diff -r "$UB_OUT/arm64/include" "$UB_OUT/x86_64/include" >/dev/null \
+    || echo "warning: headers differ between architectures" >&2
+  cp -R "$UB_OUT/arm64/include/." "$UB_OUT/universal/include/"
+}
