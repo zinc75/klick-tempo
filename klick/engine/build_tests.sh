@@ -22,6 +22,10 @@ jack_prefix=${JACK_PREFIX:-/usr/local}   # the klick headers include the JACK ty
 boost=$(cd "$here/../../libs/boost/upstream" && pwd)
 lib=$here/../build/libklick.a
 [ -f "$lib" ] || { echo "error: $lib is missing, run klick/build_universal.sh first" >&2; exit 1; }
+# A library built before the last patch would not match the headers used here (different class layouts).
+for p in "$here"/../patches/*.patch; do
+  [ "$p" -nt "$lib" ] && { echo "error: $(basename "$p") is newer than $lib, run klick/build_universal.sh again" >&2; exit 1; }
+done
 
 src=$UB_WORK/klick
 cp -R "$UB_SRC" "$src"

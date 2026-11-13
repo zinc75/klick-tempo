@@ -19,6 +19,10 @@ boost=$(cd "$here/../../libs/boost/upstream" && pwd)
 api=$(cd "$here/../swiftui/Sources/CKlickEngine/include" && pwd)
 lib=$out/libklick.a
 [ -f "$lib" ] || { echo "error: $lib is missing, run klick/build_universal.sh first" >&2; exit 1; }
+# A library built before the last patch would not match the headers used here (different class layouts).
+for p in "$here"/../patches/*.patch; do
+  [ "$p" -nt "$lib" ] && { echo "error: $(basename "$p") is newer than $lib, run klick/build_universal.sh again" >&2; exit 1; }
+done
 
 src=$UB_WORK/klick
 cp -R "$UB_SRC" "$src"
@@ -44,6 +48,9 @@ for arch in $UB_ARCHS; do
   # The C test links the library like an application would.
   ub_env "$arch" clang -arch "$arch" -O2 -Wall -Wextra -I"$api" "$here/engine_c_test.c" "$work/libklickengine.a" \
     -lc++ -framework AudioToolbox -framework CoreAudio -framework Accelerate -o "$out/engine_tests/engine_c_test_$arch"
+  # Plays on the default output device: run it by hand and change the output of the Mac meanwhile.
+  ub_env "$arch" clang -arch "$arch" -O2 -Wall -Wextra -I"$api" "$here/engine_device_test.c" "$work/libklickengine.a" \
+    -lc++ -framework AudioToolbox -framework CoreAudio -framework CoreFoundation -framework Accelerate -o "$out/engine_tests/engine_device_test_$arch"
 done
 
 lipo -create "$UB_WORK"/arm64/libklickengine.a "$UB_WORK"/x86_64/libklickengine.a -output "$out/libklickengine.a"
