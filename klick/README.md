@@ -51,3 +51,4 @@ Three patches in `patches/`, none of which changes what the `klick` program does
 - `upstream/`: the original sources, never edited (changes go to `patches/` or to new files).
 - `patches/`: changes to the upstream sources, as unified diffs that apply with `git apply` from the `upstream/` directory.
 - `build_universal.sh`: builds the universal binary.
+- `engine/`: a CoreAudio backend for the engine (`AudioInterfaceCoreAudio`), with test programs and `build_tests.sh`.
