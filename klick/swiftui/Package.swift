@@ -12,6 +12,10 @@ let engineDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent(
 let package = Package(
     name: "Klick",
     platforms: [.macOS("15.0")],
+    dependencies: [
+        // Look and feel shared with the other tools (glass blocks, window fill), MIT.
+        .package(path: "../../shared/MatrixKit"),
+    ],
     targets: [
         // The C interface of the engine (klick_engine.h) and the link settings of its static library.
         .target(
@@ -33,5 +37,11 @@ let package = Package(
         // the equivalent command line. Unit tested.
         .target(name: "KlickKit", dependencies: ["KlickEngine"]),
         .testTarget(name: "KlickKitTests", dependencies: ["KlickKit"]),
+        // The SwiftUI application. As in JackMate, UI code is main-actor isolated by default.
+        .executableTarget(
+            name: "Klick",
+            dependencies: ["KlickKit", "KlickEngine", .product(name: "MatrixKit", package: "MatrixKit")],
+            swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
+        ),
     ]
 )
