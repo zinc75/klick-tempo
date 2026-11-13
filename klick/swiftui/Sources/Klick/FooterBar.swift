@@ -6,13 +6,44 @@ import MatrixKit
 import KlickEngine
 import KlickKit
 
+/// The choice between the metronome and the map. While the other one plays, the change asks for a confirmation: it stops what
+/// plays, and a map starts again from its first bar. Used by the footer and by the live view.
+struct ModePicker: View {
+    @Environment(AppModel.self) private var model
+    /// The mode asked for while the other one plays: it replaces it only once the user has confirmed.
+    @State private var pendingMode: Mode?
+
+    var body: some View {
+        Picker("Lecture", selection: Binding(get: { model.player.mode ?? model.mode }, set: { requested in
+            if model.isPlaying && model.player.mode != requested { pendingMode = requested } else { model.choose(requested) }
+        })) {
+            Text("Métronome").tag(Mode.simple)
+            Text("Carte").tag(Mode.map)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
+        .confirmationDialog(pendingMode == .map ? "Passer à la carte de tempo ?" : "Passer au métronome ?",
+                            isPresented: Binding(get: { pendingMode != nil }, set: { if !$0 { pendingMode = nil } }),
+                            titleVisibility: .visible, presenting: pendingMode) { mode in
+            Button("Changer") { model.choose(mode) }
+            Button("Annuler", role: .cancel) {}
+        } message: { mode in
+            Text(mode == .map ? "Le métronome s'arrête et la carte démarre depuis le début." : "La carte s'arrête et le métronome démarre.")
+        }
+    }
+}
+
 /// The footer of the map and settings pages: what the button will play, the button, and the command line.
 struct FooterBar: View {
     @Environment(AppModel.self) private var model
     @State private var showsCommand = false
 
+    /// What the footer talks about: what plays, or, stopped, what the button would play.
+    private var shownMode: Mode { model.player.mode ?? model.mode }
+
     private var summary: String {
-        if model.mode == .map {
+        if shownMode == .map {
             let map = model.document
             return String(localized: "Carte de tempo, \(Plural.sections(map.sections.count)), \(Plural.bars(map.totalBars))")
         }
@@ -20,21 +51,20 @@ struct FooterBar: View {
         return String(localized: "Mesure \(s.beats)/\(s.denominator), \(Int(s.tempo.rounded())) BPM")
     }
 
+    private var status: LocalizedStringKey {
+        guard model.isPlaying else { return "Arrêté" }
+        return shownMode == .map ? "En cours : carte de tempo" : "En cours : métronome"
+    }
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 // The settings pages say which of the two the button plays; the two main pages decide by themselves.
                 if model.page != .map {
-                    Picker("Lecture", selection: Binding(get: { model.mode }, set: { model.choose($0) })) {
-                        Text("Métronome").tag(Mode.simple)
-                        Text("Carte").tag(Mode.map)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
+                    ModePicker()
                 }
                 Text(verbatim: summary).fontWeight(.medium)
-                Text(model.isPlaying ? "En cours" : "Arrêté").font(.caption).foregroundStyle(.secondary)
+                Text(status).font(.caption).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
