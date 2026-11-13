@@ -19,7 +19,7 @@ public enum KlickCommand {
         switch mode {
         case .map:
             // klick's own count-in exists for tempo maps only (-c 0 means two beats).
-            if s.countIn != .none && !s.isQuiet {
+            if s.countIn != .none && s.isCountInAudible && !s.isQuiet {
                 a += ["-c", s.countIn == .twoBeats ? "0" : "\(s.countIn.engineParameters(beatsPerBar: s.beats).bars)"]
             }
             a += ["-f", mapFile ?? "map.klick"]

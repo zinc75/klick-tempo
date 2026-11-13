@@ -1,0 +1,160 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Licence of the program this interface drives (klick).
+import Foundation
+import KlickEngine
+import Observation
+
+/// Plays the metronome or the tempo map and tells the interface what is heard: the beat, the count-in, the section and the
+/// tempo. The engine schedules beats ahead of the sound; the player releases each one when it is heard (the position of the
+/// output minus its latency), so that the lamps light with the click.
+@MainActor
+@Observable
+public final class Player {
+    public enum Phase: Equatable, Sendable { case stopped, countIn, playing }
+
+    public private(set) var phase = Phase.stopped
+    public private(set) var mode: Mode?
+    /// The last beat heard (the count-in included); `nil` when stopped.
+    public private(set) var beat: Beat?
+    /// Goes up by one at each beat heard: the lamps flash when it changes.
+    public private(set) var beatCount = 0
+    /// Beats of the count-in left, the one being heard included.
+    public private(set) var countInRemaining = 0
+    /// Tempo of the last beat heard, in quarter notes per minute (follows the speed trainer and the ramps of a map).
+    public private(set) var tempo = 0.0
+    public private(set) var sectionIndex = 0
+    /// Position in the tempo map, in bars from its start (the fraction is the beat).
+    public private(set) var mapPosition = 0.0
+    public private(set) var message: String?
+
+    /// Extra delay of the display for the output in use, in milliseconds (set from `ClickSettings.displayOffsets`).
+    public var displayOffsetMilliseconds = 0.0
+
+    public var mapProgress: Double {
+        let total = Double(map.reduce(0) { $0 + $1.bars })
+        return total > 0 ? min(1, mapPosition / total) : 0
+    }
+
+    private let engine: Engine
+    private let soundsDirectory: URL
+    private var map: [MapSection] = []
+    private var pending: [Beat] = []
+    private var quiet = false
+    private var latencyFrames = 0
+    private var latencyReadAt = Date.distantPast
+    private var soundKey: String?
+    private var loop: Task<Void, Never>?
+
+    /// `soundsDirectory` holds `square_emphasis.wav`, `square_normal.wav`, `sine_…`, `noise_…` and `click_…`.
+    public init(engine: Engine, soundsDirectory: URL) {
+        self.engine = engine
+        self.soundsDirectory = soundsDirectory
+    }
+
+    public var isPlaying: Bool { phase != .stopped }
+
+    // MARK: settings and map
+
+    /// Passes the settings to the engine; can be called while it plays.
+    public func apply(_ settings: ClickSettings) throws {
+        try loadSounds(settings)
+        quiet = settings.isQuiet
+        engine.setVolume(settings.isQuiet ? 0 : settings.masterVolume)
+        try engine.setSimple(tempo: settings.tempo, beats: settings.beats, denominator: settings.denominator, pattern: settings.pattern,
+                             trainerStart: 0, trainerIncrement: settings.trainer.engineIncrement, trainerLimit: settings.trainer.engineLimit)
+    }
+
+    /// The tempo map to play; takes effect at the next start.
+    public func setMap(_ sections: [MapSection], tempoMultiplier: Double = 1) throws {
+        try engine.setMap(sections.map(\.engineSection), tempoMultiplier: tempoMultiplier)
+        map = sections
+    }
+
+    private func loadSounds(_ s: ClickSettings) throws {
+        let key = "\(s.sound)|\(s.accentVolume)|\(s.normalVolume)|\(s.pitchFactor)"
+        guard key != soundKey else { return }
+        let accent: URL, normal: URL
+        switch s.sound {
+        case .builtIn(let sound):
+            accent = soundsDirectory.appendingPathComponent("\(sound.fileName)_emphasis.wav")
+            normal = soundsDirectory.appendingPathComponent("\(sound.fileName)_normal.wav")
+        case .files(let a, let n):
+            accent = URL(fileURLWithPath: a); normal = URL(fileURLWithPath: n)
+        }
+        try engine.loadSound(accent: accent, normal: normal, accentVolume: s.accentVolume, normalVolume: s.normalVolume,
+                             accentPitch: s.pitchFactor, normalPitch: s.pitchFactor)
+        soundKey = key
+    }
+
+    // MARK: playing
+
+    public func start(_ mode: Mode, settings: ClickSettings) throws {
+        stop()
+        try apply(settings)
+        let beatsPerBar = mode == .map ? (map.first?.beats ?? settings.beats) : settings.beats
+        let count = settings.countIn.engineParameters(beatsPerBar: beatsPerBar)
+        try engine.setCountIn(bars: count.bars, beatsPerBar: count.beatsPerBar, volume: settings.isCountInAudible && !settings.isQuiet ? 0.66 : 0)
+        try engine.start(mode)
+        self.mode = mode
+        beat = nil; beatCount = 0; tempo = 0; sectionIndex = 0; mapPosition = 0; message = nil
+        pending = []
+        countInRemaining = 0
+        phase = count.bars > 0 ? .countIn : .playing
+        readLatency(force: true)
+        loop = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                self?.update()
+                try? await Task.sleep(for: .milliseconds(16))
+            }
+        }
+    }
+
+    public func stop() {
+        loop?.cancel(); loop = nil
+        if phase != .stopped || engine.isPlaying { engine.stop() }
+        phase = .stopped
+        mode = nil
+        beat = nil
+        countInRemaining = 0
+        pending = []
+    }
+
+    /// Releases the beats that are heard by now. Called by the display loop; public so that tests can drive it.
+    public func update() {
+        guard phase != .stopped else { return }
+        pending += engine.pollBeats()
+        readLatency(force: false)
+        let delay = quiet ? 0 : latencyFrames + Int(displayOffsetMilliseconds * Double(engine.sampleRate) / 1000)
+        let heardUntil = Int64(engine.position) - Int64(delay)
+        while let next = pending.first, Int64(next.frame) <= heardUntil {
+            pending.removeFirst()
+            hear(next)
+        }
+        if mode == .map, pending.isEmpty, !engine.isPlaying { stop() }   // the map is over
+    }
+
+    private func hear(_ b: Beat) {
+        beat = b
+        beatCount += 1
+        tempo = b.tempo
+        if b.isCountIn {
+            phase = .countIn
+            countInRemaining = b.countInRemaining
+        } else {
+            phase = .playing
+            countInRemaining = 0
+            if mode == .map {
+                sectionIndex = b.section
+                let before = map.prefix(b.section).reduce(0) { $0 + $1.bars }
+                mapPosition = Double(before) + Double(b.bar) + Double(b.beat) / Double(max(b.beats, 1))
+            }
+        }
+    }
+
+    /// The system is asked now and then, not at every display frame.
+    private func readLatency(force: Bool) {
+        guard force || Date().timeIntervalSince(latencyReadAt) > 1 else { return }
+        latencyFrames = engine.outputLatency
+        latencyReadAt = Date()
+    }
+}

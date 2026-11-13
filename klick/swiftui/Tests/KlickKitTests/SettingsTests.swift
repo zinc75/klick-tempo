@@ -109,11 +109,14 @@ final class SettingsTests: XCTestCase {
         s.accentVolume = 1; s.normalVolume = 1
         s.trainer.isEnabled = true; s.trainer.target = 140; s.trainer.step = 2; s.trainer.everyBars = 8
         XCTAssertEqual(KlickCommand.text(settings: s, mode: .simple, mapFile: nil, connectToPhysicalOutputs: false), "klick 4/4 120-140/4 Xxxx")
-        s.countIn = .twoBeats
+        s.countIn = .twoBeats; s.isCountInAudible = true
         XCTAssertEqual(KlickCommand.text(settings: s, mode: .map, mapFile: "my song.klick", connectToPhysicalOutputs: false),
                        "klick -c 0 -f 'my song.klick'")
-        s.countIn = .oneBar; s.isQuiet = true
+        s.isCountInAudible = false
         XCTAssertEqual(KlickCommand.text(settings: s, mode: .map, mapFile: "song.klick", connectToPhysicalOutputs: false),
                        "klick -f song.klick", "klick has no silent count-in")
+        s.isCountInAudible = true; s.isQuiet = true
+        XCTAssertEqual(KlickCommand.text(settings: s, mode: .map, mapFile: "song.klick", connectToPhysicalOutputs: false),
+                       "klick -f song.klick")
     }
 }

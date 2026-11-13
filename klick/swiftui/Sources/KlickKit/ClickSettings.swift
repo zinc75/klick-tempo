@@ -61,9 +61,14 @@ public struct ClickSettings: Codable, Equatable, Sendable {
     public var pitch = 0.0
     public var masterVolume = 0.8
     public var countIn = CountIn.none
+    /// The count-in is heard (about two thirds of the volume of the clicks) or only seen.
+    public var isCountInAudible = false
     /// Visual only: no click is heard.
     public var isQuiet = false
     public var trainer = SpeedTrainer()
+    /// Delay of the display, in milliseconds, by name of output device: some outputs (Bluetooth) delay the sound more than they
+    /// say, and the lamps then wait for it. Adjusted by ear.
+    public var displayOffsets: [String: Double] = [:]
 
     public init() {}
 
