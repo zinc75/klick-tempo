@@ -55,6 +55,15 @@ struct KlickApp: App {
             .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("build/samples")
     }
 
+    /// The example maps: in the application bundle; in a development run, the folder of the sources.
+    static var examplesDirectory: URL {
+        if let bundled = Bundle.main.resourceURL?.appendingPathComponent("Examples"),
+           FileManager.default.fileExists(atPath: bundled.path) { return bundled }
+        // .../klick/swiftui/Sources/Klick/KlickApp.swift -> .../klick/swiftui/Examples
+        return URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("Examples")
+    }
+
     /// The settings of the last session come back; a development run can ask for a fresh start.
     private static var keepsSettings: Bool {
         #if DEBUG
@@ -76,7 +85,10 @@ struct KlickApp: App {
             engine = try! Engine(offline: true)
         }
         let player = Player(engine: engine, soundsDirectory: Self.soundsDirectory)
+        // At the very first launch the map is an example, so that the page is not empty.
+        let firstLaunch = Self.keepsSettings && UserDefaultsStore().load() == nil
         let model = AppModel(player: player, store: Self.keepsSettings ? UserDefaultsStore() : nil)
+        if firstLaunch, let first = ExampleMap.all.first { try? model.openExample(first, in: Self.examplesDirectory) }
         model.errorMessage = failure
         #if DEBUG
         // Development aids: KLICK_METER=5/8 and KLICK_PATTERN=X.xxx set the meter and the pattern of the run.

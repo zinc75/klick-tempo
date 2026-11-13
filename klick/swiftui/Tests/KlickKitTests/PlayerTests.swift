@@ -86,6 +86,44 @@ final class PlayerTests: XCTestCase {
         XCTAssertNil(player.mode)
     }
 
+    func testTheMapCanStartFromASection() throws {
+        let (player, engine) = try makePlayer()
+        let sections = [
+            MapSection(label: "a", bars: 2, tempo: 120),
+            MapSection(label: "b", bars: 1, beats: 3, tempo: 120),
+            MapSection(label: "c", bars: 1, beats: 2, tempo: 120),
+        ]
+        try player.setMap(sections, startingAtBar: 2)
+        try player.start(.map, settings: ClickSettings())
+        var seen: [Int] = []
+        var firstPosition: Double?
+        run(engine, player, seconds: 7) {
+            if player.phase != .stopped {
+                if seen.last != player.sectionIndex { seen.append(player.sectionIndex) }
+                if firstPosition == nil { firstPosition = player.mapPosition }
+            }
+        }
+        XCTAssertEqual(seen, [1, 2], "the sections before are skipped, the numbers are those of the whole map")
+        XCTAssertEqual(firstPosition, 2, "the position counts the bars that were skipped")
+        XCTAssertEqual(player.phase, .stopped)
+    }
+
+    func testTheMapCanStartInTheMiddleOfASection() throws {
+        let (player, engine) = try makePlayer()
+        try player.setMap([MapSection(label: "ramp", bars: 4, tempo: 100, tempoEnd: 140), MapSection(label: "b", bars: 1, tempo: 140)], startingAtBar: 2)
+        try player.start(.map, settings: ClickSettings())
+        var first: (section: Int, bar: Int, position: Double, tempo: Double)?
+        run(engine, player, seconds: 2) {
+            if first == nil, player.phase == .playing, player.beat != nil {
+                first = (player.sectionIndex, player.sectionBar, player.mapPosition, player.tempo)
+            }
+        }
+        XCTAssertEqual(first?.section, 0)
+        XCTAssertEqual(first?.bar, 2, "the section counts from its own first bar")
+        XCTAssertEqual(first?.position, 2)
+        XCTAssertEqual(first?.tempo ?? 0, 120, accuracy: 2, "the ramp starts where it has got to (100 to 140 over 4 bars, 2 bars in)")
+    }
+
     func testTheDisplayWaitsForTheOffsetButNotWhenQuiet() throws {
         func framesBeforeFirstBeat(quiet: Bool) throws -> Int {
             let (player, engine) = try makePlayer()

@@ -1,0 +1,7 @@
+# One section per meter. The pattern has one character per beat:
+# X accent, x normal, . silent.
+four: 4 4/4 100 Xxxx
+six: 4 6/8 100 XxxXxx   # 3+3
+seven: 4 7/8 100 XxXxXxx # 2+2+3
+five: 4 5/4 100 XxxXx    # 3+2
+four_again: 4 4/4 100 Xxxx

@@ -1,0 +1,7 @@
+# Keep the tempo on your own: a volume of 0 makes a section silent.
+# The bars still count, so the next one comes in on time.
+play: 4 4/4 100
+silent: 2 4/4 100 Xxxx 0
+play_again: 4 4/4 100
+silent_longer: 4 4/4 100 Xxxx 0
+check: 4 4/4 100

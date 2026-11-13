@@ -96,8 +96,8 @@ struct LivePage: View {
             if counting { return String(localized: "décompte") }
             let total = model.document.sections.count
             var parts = [String(localized: "section \(player.sectionIndex + 1) sur \(total)")]
-            if let section, let bar = player.beat?.bar, player.phase == .playing {
-                parts.append(String(localized: "mesure \(bar + 1) sur \(section.bars)"))
+            if let section, player.phase == .playing, player.beat != nil {
+                parts.append(String(localized: "mesure \(player.sectionBar + 1) sur \(section.bars)"))
             }
             return parts.joined(separator: " · ")
         }

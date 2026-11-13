@@ -152,12 +152,40 @@ public final class AppModel {
         isPreviewing = false
     }
 
+    /// The section the map page puts forward: the one that is heard while the map plays (it follows the playing), else the one
+    /// the user selected.
+    public var activeSection: Int? {
+        if isPlaying, player.mode == .map, player.phase == .playing { return player.sectionIndex }
+        return selectedSection
+    }
+
+    /// Where the tempo map starts, in bars from its beginning: the cursor of the timeline. It stays where the user put it.
+    public private(set) var mapStartBar = 0
+
+    /// The first bar of a section, counted from the start of the map.
+    public func bar(ofSection index: Int) -> Int {
+        document.sections.prefix(index).reduce(0) { $0 + $1.bars }
+    }
+
+    /// Puts the cursor on a bar of the map (a map that plays starts again from there).
+    public func moveMapCursor(toBar bar: Int) {
+        let clamped = min(max(0, bar), max(0, document.totalBars - 1))
+        mapStartBar = clamped
+        if isPlaying && player.mode == .map { start(.map) }
+    }
+
+    /// Starts the tempo map from one of its sections (a map already playing starts again from there).
+    public func startMap(from section: Int) {
+        mapStartBar = bar(ofSection: section)
+        start(.map)
+    }
+
     public func start(_ mode: Mode) {
         endPreview()
         // Only a start from the metronome or the map opens the live view; the settings pages stay, to hear what is changed.
         if !isPlaying { liveViewWanted = page == .metronome || page == .map }
         do {
-            if mode == .map { try player.setMap(document.sections) }
+            if mode == .map { try player.setMap(document.sections, startingAtBar: mapStartBar) }
             try player.start(mode, settings: settings)
             errorMessage = nil
         } catch {
@@ -274,6 +302,16 @@ public final class AppModel {
     public func newMap() {
         document = TempoMapDocument(sections: [MapSection(label: "intro", bars: 8, tempo: 120)])
         selectedSection = 0
+        mapStartBar = 0
+    }
+
+    /// Opens an example as a new map: it has no file, so saving asks for one and the example itself is never changed.
+    public func openExample(_ example: ExampleMap, in directory: URL) throws {
+        let sections = try example.sections(in: directory)
+        guard !sections.isEmpty else { throw TempoMapFile.ParseError(line: 0, text: "", message: "no section") }
+        document = TempoMapDocument(sections: sections, suggestedName: example.title)
+        selectedSection = 0
+        mapStartBar = 0
     }
 
     /// Opens a file; the map in use is left alone when it cannot be read.
@@ -282,6 +320,7 @@ public final class AppModel {
         guard !opened.sections.isEmpty else { throw TempoMapFile.ParseError(line: 0, text: "", message: "no section") }
         document = opened
         selectedSection = 0
+        mapStartBar = 0
     }
 
     /// Saves to the file the map comes from, or to `url`.
@@ -309,6 +348,7 @@ public final class AppModel {
     /// Replaces the sections of the map; applied to the player at the next start.
     public func edit(_ change: (inout TempoMapDocument) -> Void) {
         change(&document)
+        if mapStartBar >= document.totalBars { mapStartBar = 0 }
         if let selected = selectedSection, selected >= document.sections.count { selectedSection = document.sections.indices.last }
     }
 }

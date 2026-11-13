@@ -11,6 +11,7 @@ import KlickKit
 struct MapPage: View {
     @Environment(AppModel.self) private var model
     @State private var editing: SectionEdit?
+    @State private var asksToClear = false
 
     var body: some View {
         @Bindable var model = model
@@ -19,8 +20,19 @@ struct MapPage: View {
                 header
                 HStack(spacing: 10) {
                     Button("Ouvrir une carte…") { open() }
+                    Menu("Exemples") {
+                        ForEach(ExampleMap.all) { example in
+                            Button(example.title) { openExample(example) }
+                                .help(example.detail)
+                        }
+                    }
+                    .menuIndicator(.visible)
+                    .fixedSize()
                     Button("Enregistrer la carte") { save() }
                         .disabled(model.document.url != nil && !model.document.isModified)
+                    // A map that has changes is not thrown away without asking.
+                    Button("Vider") { if model.document.isModified { asksToClear = true } else { model.newMap() } }
+                        .help("Repartir d'une carte à une seule section")
                     Spacer()
                     Text("Décompte").font(.callout).foregroundStyle(.secondary)
                     Picker("Décompte", selection: $model.settings.countIn) {
@@ -30,7 +42,7 @@ struct MapPage: View {
                     .fixedSize()
                     Button("Ajouter une section") { editing = SectionEdit.new(after: model.selectedSection, in: model.document.sections) }
                 }
-                MapPanel(title: "Déroulement", subtitle: Text(verbatim: totalText)) {
+                MapPanel(title: "Déroulement", subtitle: Text(verbatim: totalText + " · " + String(localized: "glissez le curseur pour choisir le départ"))) {
                     MapTimeline().frame(height: 150)
                 }
                 MapPanel(title: "Notation", subtitle: Text("une mesure type par section")) {
@@ -45,6 +57,12 @@ struct MapPage: View {
         }
         .scrollEdgeEffectStyleIfAvailable()
         .sheet(item: $editing) { target in SectionEditor(target: target) }
+        .confirmationDialog("Vider la carte ?", isPresented: $asksToClear, titleVisibility: .visible) {
+            Button("Vider", role: .destructive) { model.newMap() }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Les modifications qui ne sont pas enregistrées seront perdues.")
+        }
     }
 
     private var header: some View {
@@ -72,6 +90,10 @@ struct MapPage: View {
         do { try model.openMap(at: url); model.errorMessage = nil } catch { model.errorMessage = error.localizedDescription }
     }
 
+    private func openExample(_ example: ExampleMap) {
+        do { try model.openExample(example, in: KlickApp.examplesDirectory); model.errorMessage = nil } catch { model.errorMessage = error.localizedDescription }
+    }
+
     private func save() {
         let target: URL?
         if model.document.url == nil {
@@ -90,7 +112,7 @@ enum MapFiles {
 
     /// The file name without its extension, or "Sans titre" until the map is saved.
     @MainActor static func displayName(of document: TempoMapDocument) -> String {
-        document.url?.deletingPathExtension().lastPathComponent ?? String(localized: "Sans titre")
+        document.displayName ?? String(localized: "Sans titre")
     }
 
     /// The folder the dialogs start in: `~/Documents/Klick` once it exists, else Documents.
@@ -145,11 +167,21 @@ private struct MapPanel<Content: View>: View {
 /// The sections side by side, as wide as their bars, with the tempo drawn across them (steps, ramps, one tempo per beat).
 private struct MapTimeline: View {
     @Environment(AppModel.self) private var model
+    /// The bar under the pointer while the cursor is dragged; the map moves only when it is let go.
+    @State private var dragBar: Int?
+
+    /// Where the cursor is, in bars from the start: where the map starts, or, while it plays, where it is.
+    private var cursor: Double {
+        if let dragBar { return Double(dragBar) }
+        if model.isPlaying && model.player.mode == .map && model.player.phase == .playing { return model.player.mapPosition }
+        return Double(model.mapStartBar)
+    }
 
     var body: some View {
         let sections = model.document.sections
         let total = max(1, sections.reduce(0) { $0 + $1.bars })
         let range = Self.tempoRange(of: sections)
+        let cursor = self.cursor
         Canvas { context, size in
             let top: CGFloat = 20, bottom: CGFloat = 8
             let plotHeight = size.height - top - bottom
@@ -159,10 +191,12 @@ private struct MapTimeline: View {
             var x: CGFloat = 0
             let gap: CGFloat = 3
             var previous: CGPoint?
+            var cursorX: CGFloat?
+            var barsBefore = 0
             for (index, section) in sections.enumerated() {
                 let width = max(6, (size.width - gap * CGFloat(sections.count - 1)) * CGFloat(section.bars) / CGFloat(total))
                 let rect = CGRect(x: x, y: 0, width: width, height: size.height)
-                let selected = index == model.selectedSection
+                let selected = index == model.activeSection
                 let shape = Path(roundedRect: rect, cornerRadius: 6)
                 context.fill(shape, with: .color(selected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.06)))
                 context.stroke(shape, with: .color(selected ? Color.accentColor.opacity(0.7) : Color.primary.opacity(0.12)),
@@ -184,11 +218,35 @@ private struct MapTimeline: View {
                 context.draw(Text(verbatim: MapTimelineText.tempo(section)).font(.caption2).foregroundStyle(.primary),
                              at: CGPoint(x: x + 6, y: size.height - 6), anchor: .bottomLeading)
                 previous = points.last
+                if cursorX == nil, cursor < Double(barsBefore + section.bars) || index == sections.count - 1 {
+                    let inside = min(max((cursor - Double(barsBefore)) / Double(max(section.bars, 1)), 0), 1)
+                    cursorX = rect.minX + width * CGFloat(inside)
+                }
+                barsBefore += section.bars
                 x += width + gap
+            }
+
+            // the cursor: a line and a small handle at the top
+            if let cursorX {
+                var line = Path()
+                line.move(to: CGPoint(x: cursorX, y: 4)); line.addLine(to: CGPoint(x: cursorX, y: size.height))
+                context.stroke(line, with: .foreground, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                var handle = Path()
+                handle.move(to: CGPoint(x: cursorX - 5, y: 0)); handle.addLine(to: CGPoint(x: cursorX + 5, y: 0))
+                handle.addLine(to: CGPoint(x: cursorX, y: 8)); handle.closeSubpath()
+                context.fill(handle, with: .foreground)
             }
         }
         .contentShape(Rectangle())
-        .gesture(SpatialTapGesture().onEnded { tap in select(at: tap.location.x, sections: sections, total: total) })
+        // A click or a drag puts the cursor on a bar; the map starts from there (a map that plays starts again from there).
+        .gesture(DragGesture(minimumDistance: 0)
+            .onChanged { drag in dragBar = bar(at: drag.location.x, sections: sections, total: total) }
+            .onEnded { drag in
+                let bar = bar(at: drag.location.x, sections: sections, total: total)
+                dragBar = nil
+                model.moveMapCursor(toBar: bar)
+                select(at: drag.location.x, sections: sections, total: total)
+            })
         .background(GeometryReader { geometry in Color.clear.preference(key: WidthKey.self, value: geometry.size.width) })
         .onPreferenceChange(WidthKey.self) { width = $0 }
         .accessibilityHidden(true)
@@ -198,6 +256,24 @@ private struct MapTimeline: View {
     private struct WidthKey: PreferenceKey {
         static let defaultValue: CGFloat = 0
         static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+    }
+
+    /// The bar under a horizontal position of the timeline.
+    private func bar(at x: CGFloat, sections: [MapSection], total: Int) -> Int {
+        guard width > 0 else { return 0 }
+        let gap: CGFloat = 3
+        var left: CGFloat = 0
+        var barsBefore = 0
+        for section in sections {
+            let w = max(6, (width - gap * CGFloat(sections.count - 1)) * CGFloat(section.bars) / CGFloat(total))
+            if x <= left + w + gap / 2 {
+                let inside = min(max((x - left) / w, 0), 0.999)
+                return barsBefore + Int(inside * CGFloat(section.bars))
+            }
+            left += w + gap
+            barsBefore += section.bars
+        }
+        return max(0, total - 1)
     }
 
     private func select(at x: CGFloat, sections: [MapSection], total: Int) {
@@ -256,8 +332,8 @@ private struct MapNotation: View {
                                   lit: nil, scale: 1)
                     }
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(i == model.selectedSection ? Color.accentColor.opacity(0.12) : .clear))
-                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(i == model.selectedSection ? Color.accentColor.opacity(0.45) : .clear, lineWidth: 0.5))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(i == model.activeSection ? Color.accentColor.opacity(0.12) : .clear))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(i == model.activeSection ? Color.accentColor.opacity(0.45) : .clear, lineWidth: 0.5))
                     .opacity(s.muted ? 0.5 : 1)
                     .contentShape(RoundedRectangle(cornerRadius: 10))
                     .onTapGesture { model.select(section: i) }
@@ -275,7 +351,7 @@ private struct MapNotation: View {
         .animation(.easeOut(duration: 0.15), value: metrics.hasLeft)
         .animation(.easeOut(duration: 0.15), value: metrics.hasRight)
         // The selected section comes into view, whichever way it was chosen (the timeline, the table, a new section).
-        .onChange(of: model.selectedSection) { _, selected in
+        .onChange(of: model.activeSection) { _, selected in
             guard let selected else { return }
             withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(selected, anchor: .center) }
         }
@@ -344,12 +420,17 @@ private struct SectionTable: View {
                     Text(verbatim: s.volume.formatted(.number.precision(.fractionLength(2)))).monospacedDigit()
                     Toggle("Silencieux", isOn: Binding(get: { s.muted }, set: { value in model.updateSection(at: i) { $0.muted = value } }))
                         .labelsHidden().toggleStyle(.switch).controlSize(.small)
-                    Button("Éditer") { model.select(section: i); edit(i) }.controlSize(.small)
+                    HStack(spacing: 6) {
+                        Button("Éditer") { model.select(section: i); edit(i) }
+                        Button("Lire d'ici") { model.select(section: i); model.startMap(from: i) }
+                            .help("Jouer la carte à partir de cette section")
+                    }
+                    .controlSize(.small)
                     }
                     // the cells touch each other so that the tint of the selected row has no gaps
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 7).padding(.vertical, 6)
-                    .background(i == model.selectedSection ? Color.accentColor.opacity(0.12) : .clear)
+                    .background(i == model.activeSection ? Color.accentColor.opacity(0.12) : .clear)
                 }
                 .contentShape(Rectangle())
                 .onTapGesture(count: 2) { model.select(section: i); edit(i) }

@@ -28,6 +28,8 @@ public final class Player {
     /// Tempo of the last beat heard, in quarter notes per minute (follows the speed trainer and the ramps of a map).
     public private(set) var tempo = 0.0
     public private(set) var sectionIndex = 0
+    /// Bar of the section being heard, from 0 (a section started in the middle counts from its own first bar).
+    public private(set) var sectionBar = 0
     /// Position in the tempo map, in bars from its start (the fraction is the beat).
     public private(set) var mapPosition = 0.0
     public private(set) var message: String?
@@ -43,6 +45,9 @@ public final class Player {
     private let engine: Engine
     private let soundsDirectory: URL
     private var map: [MapSection] = []
+    /// Where the map starts: the engine plays from there on, the counting stays that of the whole map. A bar of a section.
+    private var startSection = 0
+    private var startBarInSection = 0
     private var pending: [Beat] = []
     private var quiet = false
     private var latencyFrames = 0
@@ -89,10 +94,23 @@ public final class Player {
                              trainerStart: 0, trainerIncrement: settings.trainer.engineIncrement, trainerLimit: settings.trainer.engineLimit)
     }
 
-    /// The tempo map to play; takes effect at the next start.
-    public func setMap(_ sections: [MapSection], tempoMultiplier: Double = 1) throws {
-        try engine.setMap(sections.map(\.engineSection), tempoMultiplier: tempoMultiplier)
+    /// The tempo map to play, from its start or from the bar `startingAtBar` (counted from the start of the map, from 0; a bar
+    /// that is not in the map means the start); takes effect at the next start.
+    public func setMap(_ sections: [MapSection], tempoMultiplier: Double = 1, startingAtBar bar: Int = 0) throws {
+        var from = 0, skipped = 0
+        if bar > 0 {
+            var left = bar
+            for (index, section) in sections.enumerated() {
+                if left < section.bars { from = index; skipped = left; break }
+                left -= section.bars
+            }
+        }
+        var played = Array(sections[from...])
+        if skipped > 0 { played[0] = played[0].trimmed(skippingBars: skipped) }
+        try engine.setMap(played.map(\.engineSection), tempoMultiplier: tempoMultiplier)
         map = sections
+        startSection = from
+        startBarInSection = skipped
     }
 
     private func loadSounds(_ s: ClickSettings) throws {
@@ -116,12 +134,12 @@ public final class Player {
     public func start(_ mode: Mode, settings: ClickSettings) throws {
         stop()
         try apply(settings)
-        let beatsPerBar = mode == .map ? (map.first?.beats ?? settings.beats) : settings.beats
+        let beatsPerBar = mode == .map ? (map.indices.contains(startSection) ? map[startSection].beats : settings.beats) : settings.beats
         let count = settings.countIn.engineParameters(beatsPerBar: beatsPerBar)
         try engine.setCountIn(bars: count.bars, beatsPerBar: count.beatsPerBar, volume: settings.isCountInAudible && !settings.isQuiet ? 0.66 : 0)
         try engine.start(mode)
         self.mode = mode
-        beat = nil; beatCount = 0; barCount = 0; tempo = 0; sectionIndex = 0; mapPosition = 0; message = nil
+        beat = nil; beatCount = 0; barCount = 0; tempo = 0; sectionIndex = 0; sectionBar = 0; mapPosition = 0; message = nil
         pending = []
         countInRemaining = 0
         phase = count.bars > 0 ? .countIn : .playing
@@ -174,9 +192,10 @@ public final class Player {
             phase = .playing
             countInRemaining = 0
             if mode == .map {
-                sectionIndex = b.section
-                let before = map.prefix(b.section).reduce(0) { $0 + $1.bars }
-                mapPosition = Double(before) + Double(b.bar) + Double(b.beat) / Double(max(b.beats, 1))
+                sectionIndex = b.section + startSection
+                sectionBar = b.bar + (b.section == 0 ? startBarInSection : 0)
+                let before = map.prefix(sectionIndex).reduce(0) { $0 + $1.bars }
+                mapPosition = Double(before) + Double(sectionBar) + Double(b.beat) / Double(max(b.beats, 1))
             }
         }
     }

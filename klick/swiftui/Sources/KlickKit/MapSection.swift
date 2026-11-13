@@ -65,6 +65,22 @@ public struct MapSection: Identifiable, Equatable, Sendable {
         tempo = list[0]
     }
 
+    /// The section without its first `k` bars, to start in the middle of it: a ramp starts where it has got to, and a list of
+    /// tempos loses its first values.
+    public func trimmed(skippingBars k: Int) -> MapSection {
+        guard k > 0, k < bars else { return self }
+        var s = self
+        s.bars = bars - k
+        if let list = tempi {
+            let rest = Array(list.dropFirst(k * beats))
+            s.tempi = rest
+            s.tempo = rest.first ?? tempo
+        } else if let end = tempoEnd {
+            s.tempo = tempo + (end - tempo) * Double(k) / Double(bars)
+        }
+        return s
+    }
+
     /// What the engine plays.
     public var engineSection: Section {
         Section(label: label, bars: bars, beats: beats, denominator: denominator, tempo: tempo, tempoEnd: tempoEnd,

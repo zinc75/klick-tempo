@@ -9,15 +9,22 @@ public struct TempoMapDocument: Equatable, Sendable {
     public private(set) var url: URL?
     private var saved: [MapSection]
 
+    /// The name of an example the map comes from, shown until the map has a file.
+    public private(set) var suggestedName: String?
+
     /// Name shown under the title of the page.
     public var name: String { url?.lastPathComponent ?? "Untitled.klick" }
+
+    /// The name to show to the user: the file without its extension, else the example it comes from; `nil` for a new map.
+    public var displayName: String? { url?.deletingPathExtension().lastPathComponent ?? suggestedName }
     /// True when the sections differ from the file (or from a new map): "Save" is enabled only then.
     public var isModified: Bool { sections != saved }
     public var totalBars: Int { sections.reduce(0) { $0 + $1.bars } }
 
-    public init(sections: [MapSection] = []) {
+    public init(sections: [MapSection] = [], suggestedName: String? = nil) {
         self.sections = sections
         self.saved = sections
+        self.suggestedName = suggestedName
     }
 
     public init(contentsOf url: URL) throws {

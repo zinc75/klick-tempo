@@ -112,6 +112,40 @@ final class AppModelTests: XCTestCase {
         XCTAssertEqual(model.document.sections.count, 1, "the last section stays")
     }
 
+    func testClearingTheMapStartsAgain() throws {
+        let (model, _) = try makeModel()
+        model.addSection(MapSection(label: "verse", bars: 8, tempo: 100))
+        XCTAssertTrue(model.document.isModified)
+        model.newMap()
+        XCTAssertEqual(model.document.sections.count, 1)
+        XCTAssertFalse(model.document.isModified)
+        XCTAssertNil(model.document.url)
+        XCTAssertNil(model.document.displayName)
+    }
+
+    func testTheMapCursor() throws {
+        let (model, _) = try makeModel()   // one section of 8 bars
+        model.addSection(MapSection(label: "b", bars: 4, tempo: 100))
+        XCTAssertEqual(model.bar(ofSection: 1), 8)
+        model.moveMapCursor(toBar: 5)
+        XCTAssertEqual(model.mapStartBar, 5)
+        model.moveMapCursor(toBar: 99)
+        XCTAssertEqual(model.mapStartBar, 11, "the last bar at most")
+        model.startMap(from: 1)
+        XCTAssertEqual(model.mapStartBar, 8)
+        XCTAssertEqual(model.player.mode, .map)
+        model.moveMapCursor(toBar: 2)
+        XCTAssertTrue(model.isPlaying, "a map that plays starts again from the new place")
+        model.stop()
+        model.removeSection(at: 1)
+        model.moveMapCursor(toBar: 7)
+        XCTAssertEqual(model.mapStartBar, 7)
+        model.updateSection(at: 0) { $0.bars = 4 }
+        XCTAssertEqual(model.mapStartBar, 0, "a cursor that is no longer in the map goes back to the start")
+        model.newMap()
+        XCTAssertEqual(model.mapStartBar, 0)
+    }
+
     func testAnUnreadableFileLeavesTheMapAlone() throws {
         let (model, _) = try makeModel()
         let file = FileManager.default.temporaryDirectory.appendingPathComponent("klick-bad-\(UUID().uuidString).klick")

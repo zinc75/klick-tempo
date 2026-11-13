@@ -1,0 +1,7 @@
+# Practice ramp: start slow, then climb in steps of 10 BPM.
+# One line per section: [label:] bars [beats/unit] tempo [pattern] [volume]
+warmup: 8 4/4 80
+step1: 8 4/4 90
+step2: 8 4/4 100
+step3: 8 4/4 110
+target: 8 4/4 120
