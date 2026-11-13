@@ -97,6 +97,10 @@ public final class Engine: @unchecked Sendable {
 
     deinit { klick_engine_destroy(handle) }
 
+    /// The handle of the engine in the C interface, for the functions of the library that provided the backend (JACK: the ports).
+    /// It stays valid as long as this object lives.
+    public var rawHandle: OpaquePointer { handle }
+
     /// The id of the backend: "coreaudio", "offline", or the one a library gave ("jack").
     public var backendID: String { String(cString: klick_engine_backend_id(handle)) }
 

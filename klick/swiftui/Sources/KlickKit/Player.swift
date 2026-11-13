@@ -42,7 +42,8 @@ public final class Player {
         return total > 0 ? min(1, mapPosition / total) : 0
     }
 
-    private var engine: Engine
+    /// The engine in use; another one after `replaceEngine`.
+    public private(set) var engine: Engine
     private let soundsDirectory: URL
     private var map: [MapSection] = []
     /// Where the map starts: the engine plays from there on, the counting stays that of the whole map. A bar of a section.
