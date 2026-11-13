@@ -1,7 +1,7 @@
 /*
  * Steady test of the CoreAudio backend: 4/4 at 120 BPM for a given time, with the delivery diagnostics of the backend
  * (dropouts of the device clock, lateness of the blocks) and the regularity of the beats.
- * Usage: engine_steady_test <samples dir> [seconds]
+ * Usage: engine_steady_test <samples dir> [seconds] [engine rate, 0 = the rate of the device]
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  * Licence of the program it belongs to (klick).
@@ -26,7 +26,7 @@ int main(int argc, char ** argv)
     if (argc < 2) { std::fprintf(stderr, "usage: %s <samples dir> [seconds]\n", argv[0]); return 2; }
     double seconds = argc > 2 ? std::atof(argv[2]) : 10.0;
     try {
-        AudioInterfaceCoreAudio audio;
+        AudioInterfaceCoreAudio audio(argc > 3 ? static_cast<nframes_t>(std::atoi(argv[3])) : 0);
         AudioChunkConstPtr emphasis(new AudioChunk(std::string(argv[1]) + "/square_emphasis.wav", audio.samplerate()));
         AudioChunkConstPtr normal(new AudioChunk(std::string(argv[1]) + "/square_normal.wav", audio.samplerate()));
         MetronomeSimple metro(audio);
@@ -40,7 +40,7 @@ int main(int argc, char ** argv)
         metro.set_beat_callback([&](Metronome::BeatEvent const & e) { if (n < frames.size()) frames[n++] = double(pos) + e.offset; });
         audio.set_monitor([&](sample_t const *, nframes_t k) { pos += k; });
 
-        std::printf("device %u Hz, 4/4 at 120 BPM for %.0f s\n", audio.samplerate(), seconds);
+        std::printf("engine at %u Hz, 4/4 at 120 BPM for %.0f s\n", audio.samplerate(), seconds);
         metro.start();
         audio.start();
         std::this_thread::sleep_for(std::chrono::duration<double>(seconds));

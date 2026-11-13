@@ -41,7 +41,9 @@ typedef struct {
     int32_t denom;              /* beat unit of the meter */
     int32_t type;               /* KlickBeatType */
     float tempo;                /* quarter notes per minute at this beat */
-    float volume;               /* volume of the section, 1 for the simple metronome */
+    float volume;               /* volume of the section (of the count-in for its beats), 1 for the simple metronome */
+    int32_t count_in;           /* 1 for a beat of the count-in; then 'section' is 0 and 'bar' counts from 0 */
+    int32_t count_in_left;      /* beats of the count-in still to come, this one included (0 outside the count-in) */
 } KlickBeat;
 
 /* One section of a tempo map. */
@@ -56,9 +58,10 @@ typedef struct {
     float volume;               /* 1 normal, 0 silent */
 } KlickSection;
 
-/* Creates an engine. 'offline' = 0 plays on the default output device; 1 renders only when klick_engine_render is
- * called, at 'offline_rate' Hz (tests). Returns NULL on failure. */
-KlickEngine *klick_engine_create(int offline, uint32_t offline_rate, char *error, size_t error_size);
+/* Creates an engine working at 'rate' Hz (0 for 48000). 'offline' = 0 plays on the default output device, CoreAudio
+ * converting to the rate of the device (if it refuses, the engine works at the rate of the device: see
+ * klick_engine_samplerate); 1 renders only when klick_engine_render is called (tests). Returns NULL on failure. */
+KlickEngine *klick_engine_create(int offline, uint32_t rate, char *error, size_t error_size);
 void klick_engine_destroy(KlickEngine *);
 
 uint32_t klick_engine_samplerate(const KlickEngine *);
@@ -79,6 +82,12 @@ int klick_engine_set_simple(KlickEngine *, float tempo, int32_t beats, int32_t d
 /* The tempo map. Takes effect at the next start. */
 int klick_engine_set_map(KlickEngine *, const KlickSection *sections, size_t count, float tempo_multiplier,
                          char *error, size_t error_size);
+
+/* Count-in played before the next starts: 'bars' bars of 'beats_per_bar' beats (0 bars for none), at the tempo and the beat
+ * unit of the start of the metronome or of the first section. The first beat of each bar is an accent. Its beats are
+ * reported like the others (count_in = 1); 'volume' 0 makes it silent (visual only), about 0.66 audible. The main
+ * metronome begins exactly when it ends. */
+int klick_engine_set_countin(KlickEngine *, int32_t bars, int32_t beats_per_bar, float volume, char *error, size_t error_size);
 
 int klick_engine_start(KlickEngine *, KlickMode mode, char *error, size_t error_size);
 void klick_engine_stop(KlickEngine *);

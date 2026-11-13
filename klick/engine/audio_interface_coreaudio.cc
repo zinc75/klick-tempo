@@ -22,7 +22,7 @@ static void check(OSStatus err, char const * what)
 }
 
 
-AudioInterfaceCoreAudio::AudioInterfaceCoreAudio()
+AudioInterfaceCoreAudio::AudioInterfaceCoreAudio(nframes_t rate)
   : _unit(NULL)
   , _samplerate(0)
   , _running(false)
@@ -45,15 +45,13 @@ AudioInterfaceCoreAudio::AudioInterfaceCoreAudio()
     if (!comp) throw AudioError("CoreAudio: no default output unit");
     check(AudioComponentInstanceNew(comp, &_unit), "AudioComponentInstanceNew");
 
-    // The sample rate of the device decides the rate of the clicks (AudioChunk resamples to it).
     AudioStreamBasicDescription dev = {};
     UInt32 size = sizeof(dev);
     check(AudioUnitGetProperty(_unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &dev, &size), "get device format");
-    _samplerate = static_cast<nframes_t>(dev.mSampleRate);
 
-    // What we feed: 32-bit float, two channels, one buffer per channel, at the rate of the device.
+    // What we feed: 32-bit float, two channels, one buffer per channel. At the rate asked for, CoreAudio converting it to
+    // the device (the sounds are then loaded once whatever the device does); if the unit refuses, at the rate of the device.
     AudioStreamBasicDescription fmt = {};
-    fmt.mSampleRate = dev.mSampleRate;
     fmt.mFormatID = kAudioFormatLinearPCM;
     fmt.mFormatFlags = kAudioFormatFlagsNativeFloatPacked | kAudioFormatFlagIsNonInterleaved;
     fmt.mChannelsPerFrame = 2;
@@ -61,7 +59,12 @@ AudioInterfaceCoreAudio::AudioInterfaceCoreAudio()
     fmt.mBytesPerFrame = 4;
     fmt.mFramesPerPacket = 1;
     fmt.mBytesPerPacket = 4;
-    check(AudioUnitSetProperty(_unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &fmt, sizeof(fmt)), "set stream format");
+    fmt.mSampleRate = rate ? rate : dev.mSampleRate;
+    if (AudioUnitSetProperty(_unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &fmt, sizeof(fmt)) != noErr) {
+        fmt.mSampleRate = dev.mSampleRate;
+        check(AudioUnitSetProperty(_unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &fmt, sizeof(fmt)), "set stream format");
+    }
+    _samplerate = static_cast<nframes_t>(fmt.mSampleRate);
 
     // Allocate once, here: the render callback must not allocate.
     UInt32 max_frames = 0;

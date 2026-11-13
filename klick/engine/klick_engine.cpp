@@ -68,6 +68,14 @@ struct KlickEngine
     std::mutex pending_mutex;
     std::atomic<bool> pending_flag;
 
+    // count-in: set by the control thread, used at start
+    int countin_bars, countin_beats_per_bar; float countin_volume;
+    std::unique_ptr<MetronomeMap> countin;  // simple mode: the count-in is a small tempo map played beside the metronome
+    bool joined;                            // map mode: the count-in is the first section of the map that plays
+    int countin_total, countin_index;       // beats of the count-in, and how many were reported (audio thread)
+    std::atomic<bool> countin_active;
+    std::int64_t countin_frames_left;       // audio thread only
+
     std::atomic<int> mode;                  // 0 stopped, KLICK_MODE_*
     std::atomic<unsigned> callbacks;
     std::uint64_t frames;                   // audio thread only: frames rendered before the current block
@@ -76,14 +84,16 @@ struct KlickEngine
     std::atomic<std::uint64_t> head, tail, lost;
 
     KlickEngine()
-      : audio(NULL), multiplier(1.0f), pending(), pending_flag(false), mode(0), callbacks(0), frames(0),
+      : audio(NULL), multiplier(1.0f), pending(), pending_flag(false),
+        countin_bars(0), countin_beats_per_bar(4), countin_volume(0.0f), joined(false), countin_total(0), countin_index(0),
+        countin_active(false), countin_frames_left(0), mode(0), callbacks(0), frames(0),
         ring(RING_SIZE), head(0), tail(0), lost(0)
     {
         pending.tempo = 120.0f; pending.beats = 4; pending.denom = 4;
         pending.t_start = pending.t_increment = pending.t_limit = 0.0f;
     }
 
-    void push_beat(Metronome::BeatEvent const & e)
+    void push_beat(Metronome::BeatEvent const & e, bool from_countin_metronome)
     {
         std::uint64_t h = head.load(std::memory_order_relaxed);
         if (h - tail.load(std::memory_order_acquire) >= RING_SIZE) {
@@ -92,7 +102,10 @@ struct KlickEngine
         }
         KlickBeat & b = ring[h % RING_SIZE];
         b.frame = frames + e.offset;
-        b.section = e.entry; b.bar = e.bar; b.beat = e.beat; b.beats = e.beats; b.denom = e.denom;
+        bool in_countin = from_countin_metronome || (joined && e.entry == 0);
+        b.count_in = in_countin ? 1 : 0;
+        b.count_in_left = in_countin ? countin_total - countin_index++ : 0;
+        b.section = in_countin ? 0 : e.entry - (joined ? 1 : 0); b.bar = e.bar; b.beat = e.beat; b.beats = e.beats; b.denom = e.denom;
         b.type = e.type == TempoMap::BEAT_EMPHASIS ? KLICK_BEAT_ACCENT : e.type == TempoMap::BEAT_NORMAL ? KLICK_BEAT_NORMAL : KLICK_BEAT_SILENT;
         b.tempo = e.tempo; b.volume = e.volume;
         head.store(h + 1, std::memory_order_release);
@@ -124,12 +137,26 @@ struct KlickEngine
     {
         apply_pending();
         switch (mode.load(std::memory_order_acquire)) {
-          case KLICK_MODE_SIMPLE: simple->process_callback(buffer, nframes); break;
+          case KLICK_MODE_SIMPLE:
+            if (countin_active.load(std::memory_order_acquire)) {
+                countin->process_callback(buffer, nframes);
+                if (countin_frames_left <= static_cast<std::int64_t>(nframes)) countin_active.store(false, std::memory_order_release);
+                else countin_frames_left -= nframes;
+            }
+            simple->process_callback(buffer, nframes);
+            break;
           case KLICK_MODE_MAP:    map->process_callback(buffer, nframes); break;
           default: break;
         }
         frames += nframes;
         callbacks.fetch_add(1, std::memory_order_release);
+    }
+
+    TempoMapPtr countin_map(float tempo, int denom) const
+    {
+        TempoMap::Pattern p(countin_beats_per_bar, TempoMap::BEAT_NORMAL);
+        p[0] = TempoMap::BEAT_EMPHASIS;
+        return TempoMap::new_simple(countin_bars, tempo, countin_beats_per_bar, denom, p, countin_volume);
     }
 
     // Waits until the audio thread has gone through a few blocks without the metronome that is being stopped.
@@ -146,28 +173,31 @@ struct KlickEngine
     {
         mode.store(0, std::memory_order_release);
         wait_for_audio();
+        countin_active.store(false, std::memory_order_release);
         simple->stop();
+        if (countin) { countin->stop(); countin.reset(); }
         if (map) { map->stop(); map.reset(); }
+        joined = false;
     }
 };
 
 
 extern "C" {
 
-KlickEngine * klick_engine_create(int offline, uint32_t offline_rate, char * error, size_t error_size)
+KlickEngine * klick_engine_create(int offline, uint32_t rate, char * error, size_t error_size)
 {
     try {
         std::unique_ptr<KlickEngine> e(new KlickEngine);
         if (offline) {
-            e->offline.reset(new AudioInterfaceOffline(offline_rate ? offline_rate : 48000));
+            e->offline.reset(new AudioInterfaceOffline(rate ? rate : 48000));
             e->audio = e->offline.get();
         } else {
-            e->coreaudio.reset(new AudioInterfaceCoreAudio);
+            e->coreaudio.reset(new AudioInterfaceCoreAudio(rate ? rate : 48000));
             e->audio = e->coreaudio.get();
         }
         e->simple.reset(new MetronomeSimple(*e->audio));
         KlickEngine * raw = e.get();
-        e->simple->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b); });
+        e->simple->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b, false); });
 
         // Silent sounds until the application loads some: a metronome without a sound must not crash.
         e->accent.reset(new AudioChunk(e->audio->samplerate()));
@@ -284,6 +314,17 @@ int klick_engine_set_map(KlickEngine * e, KlickSection const * sections, size_t 
 }
 
 
+int klick_engine_set_countin(KlickEngine * e, int32_t bars, int32_t beats_per_bar, float volume, char * error, size_t error_size)
+{
+    if (bars < 0 || bars > 64 || (bars > 0 && (beats_per_bar < 1 || beats_per_bar > 64)) || !(volume >= 0.0f && volume <= 2.0f)) {
+        set_error(error, error_size, "invalid count-in");
+        return 0;
+    }
+    e->countin_bars = bars; e->countin_beats_per_bar = bars > 0 ? beats_per_bar : 4; e->countin_volume = volume;
+    return 1;
+}
+
+
 int klick_engine_start(KlickEngine * e, KlickMode mode, char * error, size_t error_size)
 {
     try {
@@ -294,13 +335,34 @@ int klick_engine_start(KlickEngine * e, KlickMode mode, char * error, size_t err
         }
         KlickEngine * raw = e;
         if (mode == KLICK_MODE_SIMPLE) {
+            e->simple->set_start_delay(0);
+            if (e->countin_bars > 0) {
+                float tempo = e->pending.tempo;
+                if (e->pending.t_increment != 0.0f && e->pending.t_start != 0.0f) tempo = e->pending.t_start;   // the speed trainer starts slower
+                e->countin.reset(new MetronomeMap(*e->audio, e->countin_map(tempo, e->pending.denom), 1.0f, false, -1, ""));
+                e->countin->set_sound(e->accent, e->normal);
+                e->countin->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b, true); });
+                e->countin_total = e->countin_bars * e->countin_beats_per_bar; e->countin_index = 0;
+                e->countin->start();
+                nframes_t delay = e->countin->total_frames();
+                e->simple->set_start_delay(delay);
+                e->countin_frames_left = delay;
+                e->countin_active.store(true, std::memory_order_release);
+            }
             e->simple->start();
             e->mode.store(KLICK_MODE_SIMPLE, std::memory_order_release);
         } else if (mode == KLICK_MODE_MAP) {
             if (!e->tempomap) throw std::runtime_error("no tempo map");
-            e->map.reset(new MetronomeMap(*e->audio, e->tempomap, e->multiplier, false, -1, ""));
+            TempoMapConstPtr played = e->tempomap;
+            e->joined = e->countin_bars > 0;
+            if (e->joined) {   // the count-in is the first section: same tempo, meter unit and timing as the map
+                TempoMap::Entry const & first = e->tempomap->entry(0);
+                e->countin_total = e->countin_bars * e->countin_beats_per_bar; e->countin_index = 0;
+                played = TempoMap::join(e->countin_map(first.tempo, first.denom), e->tempomap);
+            }
+            e->map.reset(new MetronomeMap(*e->audio, played, e->multiplier, false, -1, ""));
             e->map->set_sound(e->accent, e->normal);
-            e->map->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b); });
+            e->map->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b, false); });
             e->map->start();
             e->mode.store(KLICK_MODE_MAP, std::memory_order_release);
         } else {

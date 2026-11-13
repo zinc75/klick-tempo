@@ -10,7 +10,7 @@ final class EngineTests: XCTestCase {
         .appendingPathComponent("build/samples")
 
     func makeEngine(sounds: Bool = true) throws -> Engine {
-        let engine = try Engine(offline: true, offlineRate: 48000)
+        let engine = try Engine(offline: true, rate: 48000)
         if sounds {
             try engine.loadSound(accent: Self.sounds.appendingPathComponent("square_emphasis.wav"),
                                  normal: Self.sounds.appendingPathComponent("square_normal.wav"))
@@ -89,6 +89,44 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(peak(signal, at: beats[7].frame), 0)
         XCTAssertGreaterThan(peak(signal, at: beats[0].frame), 0.3)
         XCTAssertFalse(engine.isPlaying, "the map is over")
+    }
+
+    func testAudibleCountInBeforeTheSimpleMetronome() throws {
+        let engine = try makeEngine()
+        try engine.setSimple(tempo: 120, beats: 4, denominator: 4)
+        try engine.setCountIn(bars: 1, beatsPerBar: 4, volume: 0.66)
+        try engine.start(.simple)
+        let (signal, beats) = play(engine, seconds: 3)
+        let first = beats[0].frame
+        XCTAssertEqual(beats.prefix(5).map(\.isCountIn), [true, true, true, true, false])
+        XCTAssertEqual(beats.prefix(5).map(\.countInRemaining), [4, 3, 2, 1, 0])
+        XCTAssertEqual(beats.prefix(5).map { $0.frame - first }, [0, 24000, 48000, 72000, 96000], "the metronome begins when the count-in ends")
+        XCTAssertEqual(beats[0].type, .accent)
+        XCTAssertEqual(beats[4].bar, 0)
+        XCTAssertEqual(beats[4].beat, 0)
+        let countInPeak = peak(signal, at: beats[0].frame, base: first)
+        XCTAssertGreaterThan(countInPeak, 0.1)
+        XCTAssertLessThan(countInPeak, 0.8 * peak(signal, at: beats[4].frame, base: first), "quieter than the metronome")
+    }
+
+    func testSilentCountInBeforeTheMap() throws {
+        let engine = try makeEngine()
+        try engine.setMap([Section(bars: 1, tempo: 120, pattern: "Xxxx"), Section(bars: 1, beats: 3, tempo: 120)])
+        try engine.setCountIn(bars: 1, beatsPerBar: 2, volume: 0)
+        try engine.start(.map)
+        let (signal, beats) = play(engine, seconds: 4.5)
+        let first = beats[0].frame
+        XCTAssertEqual(beats.count, 2 + 4 + 3)
+        XCTAssertEqual(beats.prefix(3).map(\.isCountIn), [true, true, false])
+        XCTAssertEqual(beats.prefix(2).map(\.countInRemaining), [2, 1])
+        XCTAssertEqual(beats[2].frame - first, 48000)
+        XCTAssertEqual(beats.dropFirst(2).map(\.section), [0, 0, 0, 0, 1, 1, 1], "sections are numbered from the map, not the count-in")
+        XCTAssertEqual(peak(signal, at: beats[0].frame, base: first), 0, "the count-in is visual only")
+        XCTAssertGreaterThan(peak(signal, at: beats[2].frame, base: first), 0.3)
+        try engine.setCountIn(bars: 0)
+        engine.stop()
+        try engine.start(.map)
+        XCTAssertFalse(play(engine, seconds: 0.3).beats.contains { $0.isCountIn })
     }
 
     func testRestartBeginsAgain() throws {

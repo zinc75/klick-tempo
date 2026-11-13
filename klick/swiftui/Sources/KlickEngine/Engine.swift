@@ -24,8 +24,12 @@ public struct Beat: Equatable, Sendable {
     public var type: BeatType
     /// Quarter notes per minute at this beat.
     public var tempo: Double
-    /// Volume of the section (1 for the simple metronome).
+    /// Volume of the section (of the count-in for its beats; 1 for the simple metronome).
     public var volume: Double
+    /// True for a beat of the count-in (then `section` is 0 and `bar` counts the bars of the count-in).
+    public var isCountIn: Bool
+    /// Beats of the count-in still to come, this one included (0 outside the count-in).
+    public var countInRemaining: Int
 }
 
 /// One section of a tempo map.
@@ -69,9 +73,10 @@ public final class Engine: @unchecked Sendable {
     private let handle: OpaquePointer
 
     /// Opens the default output device, or, with `offline`, an engine that renders only when `render(frames:)` is called.
-    public init(offline: Bool = false, offlineRate: Int = 48000) throws {
+    /// The engine works at `rate` Hz; CoreAudio converts to the device, so a change of device does not matter.
+    public init(offline: Bool = false, rate: Int = 48000) throws {
         var message = [CChar](repeating: 0, count: 256)
-        guard let h = klick_engine_create(offline ? 1 : 0, UInt32(offlineRate), &message, message.count) else {
+        guard let h = klick_engine_create(offline ? 1 : 0, UInt32(rate), &message, message.count) else {
             throw EngineError(message: String(cString: message))
         }
         handle = h
@@ -126,6 +131,16 @@ public final class Engine: @unchecked Sendable {
         if ok == 0 { throw EngineError(message: String(cString: message)) }
     }
 
+    /// Count-in played before the next start: `bars` bars of `beatsPerBar` beats (0 bars for none), at the tempo and beat unit
+    /// of the metronome or of the first section. `volume` 0 makes it silent (visual only), about 0.66 audible. The main
+    /// metronome begins exactly when it ends.
+    public func setCountIn(bars: Int, beatsPerBar: Int = 4, volume: Double = 0) throws {
+        var message = [CChar](repeating: 0, count: 256)
+        if klick_engine_set_countin(handle, Int32(bars), Int32(beatsPerBar), Float(volume), &message, message.count) == 0 {
+            throw EngineError(message: String(cString: message))
+        }
+    }
+
     public func start(_ mode: Mode) throws {
         var message = [CChar](repeating: 0, count: 256)
         let ok = klick_engine_start(handle, mode == .simple ? KLICK_MODE_SIMPLE : KLICK_MODE_MAP, &message, message.count)
@@ -147,7 +162,8 @@ public final class Engine: @unchecked Sendable {
             for b in raw[0..<n] {
                 result.append(Beat(frame: b.frame, section: Int(b.section), bar: Int(b.bar), beat: Int(b.beat), beats: Int(b.beats),
                                    denominator: Int(b.denom), type: BeatType(rawValue: b.type) ?? .normal,
-                                   tempo: Double(b.tempo), volume: Double(b.volume)))
+                                   tempo: Double(b.tempo), volume: Double(b.volume), isCountIn: b.count_in != 0,
+                                   countInRemaining: Int(b.count_in_left)))
             }
             if n < raw.count { break }
         }

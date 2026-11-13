@@ -25,7 +25,9 @@ class AudioInterfaceCoreAudio
   public:
 
     // Opens the default output device (it follows the system setting). Nothing plays until start().
-    AudioInterfaceCoreAudio();
+    // 'rate' is the sample rate of the engine: CoreAudio converts it to the one of the device, so the sounds are
+    // loaded once whatever the device does. 0 (or a rate the output unit refuses) means the rate of the device.
+    explicit AudioInterfaceCoreAudio(nframes_t rate = 0);
     virtual ~AudioInterfaceCoreAudio();
 
     void start();
