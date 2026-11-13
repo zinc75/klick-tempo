@@ -114,9 +114,9 @@ public final class AppModel {
 
     public func resetTap() { tapTempo.reset() }
 
-    /// Takes the tempo learned from the taps; nothing before it is reliable.
+    /// Takes the tempo learned from the taps, from the third tap on.
     public func applyTap() {
-        guard tapTempo.isReliable, let bpm = tapTempo.bpm else { return }
+        guard tapTempo.canApply, let bpm = tapTempo.bpm else { return }
         settings.tempo = Self.clamped(bpm)
     }
 

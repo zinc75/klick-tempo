@@ -9,11 +9,16 @@ final class SettingsTests: XCTestCase {
         var tap = TapTempo()
         XCTAssertNil(tap.tap(at: 10.0))
         XCTAssertEqual(try XCTUnwrap(tap.tap(at: 10.5)), 120, accuracy: 0.001)
-        tap.tap(at: 11.0); tap.tap(at: 11.5)
+        XCTAssertFalse(tap.canApply, "two taps are not enough")
+        tap.tap(at: 11.0)
+        XCTAssertTrue(tap.canApply)
+        XCTAssertFalse(tap.isReliable)
+        tap.tap(at: 11.5)
         XCTAssertTrue(tap.isReliable)
         XCTAssertEqual(try XCTUnwrap(tap.bpm), 120, accuracy: 0.001)
-        tap.tap(at: 12.0 + 0.0)
+        tap.tap(at: 12.0)
         XCTAssertEqual(tap.count, 5)
+        XCTAssertEqual(try XCTUnwrap(tap.regularity), 1, accuracy: 0.001, "perfectly even taps")
     }
 
     func testTapTempoStartsAgainAfterAPauseAndKeepsTheLastTaps() {
@@ -29,6 +34,23 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(tap.count, 1)
         tap.reset()
         XCTAssertEqual(tap.count, 0)
+    }
+
+    func testRegularityFallsWithUnevenTaps() throws {
+        var uneven = TapTempo()
+        for t in [0.0, 0.45, 0.95, 1.4, 1.95, 2.4] { uneven.tap(at: t) }
+        let value = try XCTUnwrap(uneven.regularity)
+        XCTAssertLessThan(value, 0.9)
+        XCTAssertGreaterThan(value, 0.3)
+        XCTAssertEqual(try XCTUnwrap(uneven.bpm), 125, accuracy: 3)
+    }
+
+    func testATapThatSlippedIsLeftOut() throws {
+        var tap = TapTempo()
+        // steady at 100 BPM, with one tap very late
+        for t in [0.0, 0.6, 1.2, 2.2, 2.4, 3.0, 3.6] { tap.tap(at: t) }
+        XCTAssertEqual(try XCTUnwrap(tap.bpm), 100, accuracy: 1, "the odd intervals are ignored")
+        XCTAssertGreaterThan(try XCTUnwrap(tap.regularity), 0.9)
     }
 
     func testMeterChoicesDependOnTheDenominator() {

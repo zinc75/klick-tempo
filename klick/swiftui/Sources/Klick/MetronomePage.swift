@@ -66,8 +66,12 @@ private struct HeroCard: View {
             Text("Glissez sur le chiffre, ou touchez ↑ ↓ ← → au clavier. T pour taper le tempo.")
                 .font(.caption).foregroundStyle(.tertiary)
 
-            BeatLamps()
+            BeatLamps(lit: lit)
                 .padding(.top, 14)
+
+            StaffView(layout: StaffLayout(beats: model.settings.beats, denominator: model.settings.denominator, pattern: model.settings.pattern),
+                      lit: lit)
+                .padding(.top, 4)
 
             HStack {
                 MeterControls().frame(maxWidth: .infinity, alignment: .leading)
@@ -79,7 +83,19 @@ private struct HeroCard: View {
         .padding(.vertical, 18).padding(.horizontal, 22)
         .frame(maxWidth: .infinity)
         .blockBackground(cornerRadius: 16)
+        .onChange(of: model.player.beatCount) {
+            guard let beat = model.player.beat else { return }
+            let index = beat.beat
+            lit = index
+            Task {
+                try? await Task.sleep(for: .milliseconds(110))
+                if lit == index { lit = nil }
+            }
+        }
     }
+
+    // The beat that is heard now, for the lamps and the staff: lit for a moment at each beat.
+    @State private var lit: Int?
 
     // The value of the tempo when a drag starts, kept for the length of the gesture.
     @State private var dragOrigin: Double?
@@ -107,7 +123,7 @@ private struct NudgeButton: View {
 /// One lamp per beat of the bar: it flashes with the click; a click on a lamp changes its accent (accent, normal, silent).
 private struct BeatLamps: View {
     @Environment(AppModel.self) private var model
-    @State private var lit: Int?
+    let lit: Int?
 
     var body: some View {
         let pattern = Array(model.settings.pattern)
@@ -121,6 +137,8 @@ private struct BeatLamps: View {
                             .frame(width: size(pattern[i], small: small), height: size(pattern[i], small: small))
                             .background(Circle().fill(fill(pattern[i], isLit: lit == i)))
                             .overlay { if pattern[i] == "." { Circle().strokeBorder(.quaternary, lineWidth: 1.5) } }
+                            // A silent beat has no fill: without this only the dot would take the click.
+                            .contentShape(Circle())
                             .foregroundStyle(lit == i ? Color.white : .secondary)
                             .shadow(color: lit == i ? Color.accentColor.opacity(0.7) : .clear, radius: 14)
                             .scaleEffect(lit == i ? 1.1 : 1)
@@ -134,15 +152,6 @@ private struct BeatLamps: View {
         }
         .frame(minHeight: 86)
         .animation(.easeOut(duration: 0.08), value: lit)
-        .onChange(of: model.player.beatCount) {
-            guard let beat = model.player.beat else { return }
-            let index = beat.beat
-            lit = index
-            Task {
-                try? await Task.sleep(for: .milliseconds(110))
-                if lit == index { lit = nil }
-            }
-        }
     }
 
     private func size(_ c: Character, small: Bool) -> CGFloat {
@@ -218,7 +227,7 @@ private struct TapTempoCard: View {
             }
             Button { model.tap() } label: {
                 VStack(spacing: 6) {
-                    Text(verbatim: tap.bpm.map { "\(Int($0.rounded()))" } ?? "—").font(.system(size: 52, weight: .ultraLight)).monospacedDigit()
+                    Text(verbatim: tap.bpm.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "—").font(.system(size: 52, weight: .ultraLight)).monospacedDigit()
                     Text(tap.count == 0 ? "Tapez en rythme : trackpad ou touche T" : "\(tap.count) taps")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -227,10 +236,11 @@ private struct TapTempoCard: View {
                 .contentShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
+            RegularityRow(tap: tap)
             HStack {
                 Button("Appliquer le tempo") { model.applyTap() }
                     .buttonStyle(.borderedProminent)
-                    .disabled(!tap.isReliable)
+                    .disabled(!tap.canApply)
                 Button("Recommencer") { model.resetTap() }
             }
         }
@@ -239,6 +249,28 @@ private struct TapTempoCard: View {
         .blockBackground()
     }
 
+}
+
+/// How even the taps are: a bar and a percentage (an ellipsis until there are four taps).
+private struct RegularityRow: View {
+    let tap: TapTempo
+
+    var body: some View {
+        let value = tap.isReliable ? tap.regularity : nil
+        HStack(spacing: 8) {
+            Text("Régularité").font(.caption).foregroundStyle(.secondary)
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.quaternary)
+                    Capsule().fill(Color.accentColor).frame(width: geometry.size.width * (value ?? 0))
+                }
+            }
+            .frame(height: 5)
+            Text(verbatim: tap.count < 2 ? "—" : value.map { "\(Int(($0 * 100).rounded())) %" } ?? "…")
+                .font(.caption).monospacedDigit().frame(width: 42, alignment: .trailing)
+        }
+        .animation(.easeOut(duration: 0.15), value: value)
+    }
 }
 
 // MARK: speed trainer and start

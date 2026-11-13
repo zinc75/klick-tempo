@@ -78,6 +78,15 @@ struct KlickApp: App {
         let player = Player(engine: engine, soundsDirectory: Self.soundsDirectory)
         let model = AppModel(player: player, defaults: Self.keepsSettings ? .standard : nil)
         model.errorMessage = failure
+        #if DEBUG
+        // Development aids: KLICK_METER=5/8 and KLICK_PATTERN=X.xxx set the meter and the pattern of the run.
+        if let meter = ProcessInfo.processInfo.environment["KLICK_METER"]?.split(separator: "/").compactMap({ Int($0) }), meter.count == 2 {
+            model.settings.setDenominator(meter[1]); model.settings.setBeats(meter[0])
+        }
+        if let pattern = ProcessInfo.processInfo.environment["KLICK_PATTERN"], MapSection.isValid(pattern: pattern, beats: model.settings.beats) {
+            model.settings.pattern = pattern
+        }
+        #endif
         _model = State(initialValue: model)
     }
 

@@ -87,7 +87,7 @@ final class AppModelTests: XCTestCase {
         model.tap(at: 0); model.tap(at: 0.4)
         model.applyTap()
         XCTAssertEqual(model.settings.tempo, 120, "two taps are not enough")
-        model.tap(at: 0.8); model.tap(at: 1.2)
+        model.tap(at: 0.8)
         model.applyTap()
         XCTAssertEqual(model.settings.tempo, 150)
         model.resetTap()
