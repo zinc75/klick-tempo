@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import XCTest
+import SwiftUI
 @testable import AppearanceKit
 
 @MainActor
@@ -25,6 +26,17 @@ final class AppearanceSettingsTests: XCTestCase {
         XCTAssertEqual(settings.accent, .app)
         XCTAssertEqual(settings.effectiveAccent, .orange)
         XCTAssertNotNil(settings.tint)
+    }
+
+    func testTheApplicationCanGiveItsOwnColour() {
+        let own = Color(red: 1, green: 0.45, blue: 0.1)
+        let settings = AppearanceSettings(appAccent: .orange, appColor: own, defaults: store())
+        XCTAssertEqual(settings.appTint, own)
+        XCTAssertEqual(settings.tint, own)
+        settings.accent = .orange
+        XCTAssertEqual(settings.tint, Color.orange)
+        settings.accent = .system
+        XCTAssertNil(settings.tint)
     }
 
     func testChoicesAreKeptBetweenLaunches() {
