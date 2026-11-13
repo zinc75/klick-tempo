@@ -1514,34 +1514,6 @@
         }
       }
     },
-    "Clair ou sombre": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Light or dark"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hell oder dunkel"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chiaro o scuro"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claro u oscuro"
-          }
-        }
-      }
-    },
     "Clic acoustique enregistré": {
       "localizations": {
         "en": {
@@ -4090,34 +4062,6 @@
         }
       }
     },
-    "Passer en mode clair": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Switch to light mode"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zum hellen Modus wechseln"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Passa alla modalità chiara"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cambiar al modo claro"
-          }
-        }
-      }
-    },
     "Passer en mode silencieux (⌥⌘M)": {
       "localizations": {
         "en": {
@@ -4142,34 +4086,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cambiar al modo silencioso (⌥⌘M)"
-          }
-        }
-      }
-    },
-    "Passer en mode sombre": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Switch to dark mode"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zum dunklen Modus wechseln"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Passa alla modalità scura"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cambiar al modo oscuro"
           }
         }
       }

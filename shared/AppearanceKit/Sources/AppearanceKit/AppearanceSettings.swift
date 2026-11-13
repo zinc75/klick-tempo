@@ -91,10 +91,6 @@ public final class AppearanceSettings {
     public var tint: Color? { accent == .app ? appTint : effectiveAccent?.color }
 
     public func applyAppearance() { NSApp?.appearance = mode.nsAppearance }
-
-    /// The look a click on the quick toggle goes to (the sun or the moon of a toolbar): from dark to light and back, and from
-    /// "system" to the opposite of what the system shows now.
-    public func toggled(currentlyDark: Bool) -> AppearanceMode { currentlyDark ? .light : .dark }
 }
 
 private struct AppAccentKey: EnvironmentKey {

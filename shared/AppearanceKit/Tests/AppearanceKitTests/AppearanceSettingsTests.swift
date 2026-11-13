@@ -92,10 +92,4 @@ final class AppearanceSettingsTests: XCTestCase {
         XCTAssertEqual(AppearanceMode.light.nsAppearance?.name, .aqua)
         XCTAssertNil(AppearanceMode.system.nsAppearance)
     }
-
-    func testTheQuickToggleGoesToTheOtherLook() {
-        let settings = AppearanceSettings(appAccent: .red, defaults: store())
-        XCTAssertEqual(settings.toggled(currentlyDark: true), .light)
-        XCTAssertEqual(settings.toggled(currentlyDark: false), .dark)
-    }
 }

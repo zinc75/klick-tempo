@@ -136,7 +136,7 @@ struct PagePlaceholder: View {
     }
 }
 
-/// Toolbar items: the silent mode, the state of the output, the way to the live view; there, the quick change of look.
+/// Toolbar items: the silent mode, the state of the output, and while it plays the way to the live view.
 struct MainToolbar: ToolbarContent {
     @Environment(AppModel.self) private var model
 
@@ -148,15 +148,10 @@ struct MainToolbar: ToolbarContent {
                 .sharedBackgroundVisibility(.hidden)
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) { StatusPill() }
-            ToolbarSpacer(.fixed, placement: .primaryAction)
-            // While it plays and the settings are in view: the way to the live view. In the live view: the quick way to the other
-            // look (the choice itself is in the settings window, \u2318,).
+            // While it plays and the settings are in view: the way to the live view.
             if model.isPlaying && !model.showsLiveView {
+                ToolbarSpacer(.fixed, placement: .primaryAction)
                 ToolbarItem(placement: .primaryAction) { LiveViewButton(ownGlass: true) }
-                    .sharedBackgroundVisibility(.hidden)
-            }
-            if model.showsLiveView {
-                ToolbarItem(placement: .primaryAction) { AppearanceButton(ownGlass: true) }
                     .sharedBackgroundVisibility(.hidden)
             }
         } else {
@@ -165,7 +160,6 @@ struct MainToolbar: ToolbarContent {
             if model.isPlaying && !model.showsLiveView {
                 ToolbarItem(placement: .primaryAction) { LiveViewButton() }
             }
-            if model.showsLiveView { ToolbarItem(placement: .primaryAction) { AppearanceButton() } }
         }
     }
 }
