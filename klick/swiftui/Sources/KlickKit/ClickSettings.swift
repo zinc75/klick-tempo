@@ -1,0 +1,84 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Licence of the program this interface drives (klick).
+import Foundation
+
+/// The sound of the clicks: one of the four built in klick, or two files.
+public enum ClickSound: Codable, Equatable, Sendable {
+    case builtIn(BuiltIn)
+    case files(accent: String, normal: String)
+
+    /// The numbers are those of `klick -s`.
+    public enum BuiltIn: Int, Codable, CaseIterable, Sendable {
+        case square = 0, sine = 1, noise = 2, click = 3
+
+        /// Base name of the files in the sounds directory.
+        public var fileName: String {
+            switch self {
+            case .square: return "square"
+            case .sine: return "sine"
+            case .noise: return "noise"
+            case .click: return "click"
+            }
+        }
+    }
+}
+
+/// The speed trainer: the tempo rises by `step` every `everyBars` bars, up to `target`.
+public struct SpeedTrainer: Codable, Equatable, Sendable {
+    public var isEnabled = false
+    public var target = 140.0
+    public var step = 1.0
+    public var everyBars = 8
+
+    public init() {}
+
+    /// For the engine: increment in quarter notes per bar, and limit (both 0 when off).
+    public var engineIncrement: Double { isEnabled && everyBars > 0 ? step / Double(everyBars) : 0 }
+    public var engineLimit: Double { isEnabled ? target : 0 }
+
+    /// Seconds to get from `tempo` to the target, `nil` when the trainer is off or never gets there.
+    public func duration(from tempo: Double, beats: Int, denominator: Int) -> Double? {
+        guard isEnabled, step > 0, everyBars > 0, target > tempo else { return nil }
+        var seconds = 0.0, current = tempo
+        while current < target {
+            seconds += Double(everyBars * beats) * 60 / current * 4 / Double(denominator)
+            current += step
+        }
+        return seconds
+    }
+}
+
+/// Everything the user sets for the simple metronome and for the sounds, kept between launches.
+public struct ClickSettings: Codable, Equatable, Sendable {
+    public var tempo = 120.0
+    public var beats = 4
+    public var denominator = 4
+    public var pattern = "Xxxx"
+    public var sound = ClickSound.builtIn(.square)
+    public var accentVolume = 0.9
+    public var normalVolume = 0.65
+    /// Pitch of the sounds, in semitones.
+    public var pitch = 0.0
+    public var masterVolume = 0.8
+    public var countIn = CountIn.none
+    /// Visual only: no click is heard.
+    public var isQuiet = false
+    public var trainer = SpeedTrainer()
+
+    public init() {}
+
+    /// Changes the number of beats and keeps the pattern valid.
+    public mutating func setBeats(_ n: Int) {
+        beats = n
+        pattern = MapSection.resized(pattern: pattern, to: n)
+    }
+
+    /// Changes the beat unit; the number of beats follows the rules of `MeterRules`.
+    public mutating func setDenominator(_ d: Int) {
+        denominator = d
+        setBeats(MeterRules.numerator(beats, for: d))
+    }
+
+    /// Pitch as the factor klick takes (`-w`).
+    public var pitchFactor: Double { pow(2, pitch / 12) }
+}

@@ -29,5 +29,9 @@ let package = Package(
         // offline, so that the tests make no sound.
         .target(name: "KlickEngine", dependencies: ["CKlickEngine"]),
         .testTarget(name: "KlickEngineTests", dependencies: ["KlickEngine"]),
+        // What the application knows, without any UI: tempo map files and documents, tap tempo, meters, settings,
+        // the equivalent command line. Unit tested.
+        .target(name: "KlickKit", dependencies: ["KlickEngine"]),
+        .testTarget(name: "KlickKitTests", dependencies: ["KlickKit"]),
     ]
 )

@@ -21,4 +21,5 @@ The tests use an engine that renders offline: no audio device, no sound. One mor
 
 - `Sources/CKlickEngine`: the C interface of the engine (`klick_engine.h`) and the link settings of `libklickengine.a`.
 - `Sources/KlickEngine`: the Swift view of it (`Engine`, `Section`, `Beat`): playback, tempo map, beat events.
-- `Tests/KlickEngineTests`: unit tests.
+- `Sources/KlickKit`: what the application knows, without any UI: tempo map files and documents, tap tempo, meters, settings, the equivalent command line.
+- `Tests/KlickEngineTests`, `Tests/KlickKitTests`: unit tests.
