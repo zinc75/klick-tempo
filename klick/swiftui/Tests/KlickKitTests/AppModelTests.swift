@@ -121,6 +121,21 @@ final class AppModelTests: XCTestCase {
         XCTAssertEqual(model.document.sections.first?.label, "intro")
     }
 
+    func testListeningToASoundIsNotPlaying() throws {
+        let (model, _) = try makeModel()
+        model.preview(.accent, sound: .builtIn(.sine))
+        XCTAssertTrue(model.isPreviewing)
+        XCTAssertFalse(model.isPlaying, "a short click is not the metronome")
+        XCTAssertFalse(model.showsLiveView)
+        XCTAssertEqual(model.settings.sound, .builtIn(.square), "the sound in use is left alone")
+        model.togglePlayback()
+        XCTAssertFalse(model.isPreviewing, "starting ends the listening")
+        XCTAssertTrue(model.isPlaying)
+        model.preview(.bar, sound: .builtIn(.click))
+        XCTAssertFalse(model.isPreviewing, "no listening while it plays")
+        model.stop()
+    }
+
     func testAFailureIsShownNotThrown() throws {
         let engine = try Engine(offline: true, rate: 48000)
         let model = AppModel(player: Player(engine: engine, soundsDirectory: URL(fileURLWithPath: "/nonexistent")), store: nil)

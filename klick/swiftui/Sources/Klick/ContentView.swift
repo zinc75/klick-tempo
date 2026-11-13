@@ -104,7 +104,7 @@ struct PageView: View {
         switch model.page {
         case .metronome: MetronomePage()
         case .map: MapPage()
-        case .sounds: PagePlaceholder(title: "Sons", text: "Un son pour l'accent et un pour les autres temps.")
+        case .sounds: SoundsPage()
         case .output: PagePlaceholder(title: "Sortie", text: "Où va le son du métronome.")
         case .export: PagePlaceholder(title: "Exporter", text: "Une piste de clics dans un fichier audio.")
         }

@@ -84,7 +84,8 @@ public final class AppModel {
 
     // MARK: playback
 
-    public var isPlaying: Bool { player.isPlaying }
+    /// True while the metronome or the map plays; the short clicks of the sounds page are not playing.
+    public var isPlaying: Bool { player.isPlaying && !isPreviewing }
 
     private var liveViewWanted = false
 
@@ -105,7 +106,54 @@ public final class AppModel {
         isPlaying ? stop() : start(mode)
     }
 
+    // MARK: listening to a sound
+
+    public enum Preview: Sendable { case accent, normal, bar }
+
+    public private(set) var isPreviewing = false
+    private var previewTask: Task<Void, Never>?
+
+    /// Plays one accent, one normal click or a bar of four with `sound` and the volumes and pitch that are set, then stops. Not
+    /// while the metronome plays: its click is heard already.
+    public func preview(_ what: Preview, sound: ClickSound) {
+        guard !isPlaying else { return }
+        endPreview()
+        var s = settings
+        s.sound = sound
+        s.isQuiet = false
+        s.countIn = .none
+        s.tempo = 120
+        s.denominator = 4
+        s.trainer = SpeedTrainer()
+        let seconds: Double
+        switch what {
+        case .accent: s.beats = 1; s.pattern = "X"; seconds = 0.45
+        case .normal: s.beats = 1; s.pattern = "x"; seconds = 0.45
+        case .bar: s.beats = 4; s.pattern = "Xxxx"; seconds = 2.1
+        }
+        do {
+            try player.start(.simple, settings: s)
+            isPreviewing = true
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+        previewTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(seconds))
+            guard !Task.isCancelled else { return }
+            self?.endPreview()
+        }
+    }
+
+    private func endPreview() {
+        previewTask?.cancel(); previewTask = nil
+        if isPreviewing { player.stop() }
+        isPreviewing = false
+    }
+
     public func start(_ mode: Mode) {
+        endPreview()
         // Only a start from the metronome or the map opens the live view; the settings pages stay, to hear what is changed.
         if !isPlaying { liveViewWanted = page == .metronome || page == .map }
         do {
@@ -118,6 +166,7 @@ public final class AppModel {
     }
 
     public func stop() {
+        endPreview()
         player.stop()
         liveViewWanted = false
     }
