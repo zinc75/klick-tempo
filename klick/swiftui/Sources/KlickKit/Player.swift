@@ -18,6 +18,11 @@ public final class Player {
     public private(set) var beat: Beat?
     /// Goes up by one at each beat heard: the lamps flash when it changes.
     public private(set) var beatCount = 0
+    /// Goes up by one at the first beat of each bar heard (the count-in included): what a ring or a flash follows.
+    public private(set) var barCount = 0
+    /// When the last beat was heard, and how long a beat lasts at its tempo, in seconds: for a pendulum that swings with the beat.
+    public private(set) var lastBeatTime = Date.distantPast
+    public private(set) var beatDuration = 0.5
     /// Beats of the count-in left, the one being heard included.
     public private(set) var countInRemaining = 0
     /// Tempo of the last beat heard, in quarter notes per minute (follows the speed trainer and the ramps of a map).
@@ -99,7 +104,7 @@ public final class Player {
         try engine.setCountIn(bars: count.bars, beatsPerBar: count.beatsPerBar, volume: settings.isCountInAudible && !settings.isQuiet ? 0.66 : 0)
         try engine.start(mode)
         self.mode = mode
-        beat = nil; beatCount = 0; tempo = 0; sectionIndex = 0; mapPosition = 0; message = nil
+        beat = nil; beatCount = 0; barCount = 0; tempo = 0; sectionIndex = 0; mapPosition = 0; message = nil
         pending = []
         countInRemaining = 0
         phase = count.bars > 0 ? .countIn : .playing
@@ -139,6 +144,9 @@ public final class Player {
     private func hear(_ b: Beat) {
         beat = b
         beatCount += 1
+        if b.beat == 0 { barCount += 1 }
+        lastBeatTime = Date()
+        beatDuration = b.tempo > 0 ? 240 / (b.tempo * Double(max(b.denominator, 1))) : 0.5
         tempo = b.tempo
         if b.isCountIn {
             phase = .countIn

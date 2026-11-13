@@ -51,6 +51,12 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in model.stop() }
         #if DEBUG
         .task {
+            // Development aid: KLICK_AUTOPLAY=1 starts playing once the window is up (for screenshots of the playing state).
+            guard ProcessInfo.processInfo.environment["KLICK_AUTOPLAY"] != nil else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            model.start(model.mode)
+        }
+        .task {
             // A development run started from a Terminal in the background must still look active (accent colour, focus).
             NSApp.activate(ignoringOtherApps: true)
         }

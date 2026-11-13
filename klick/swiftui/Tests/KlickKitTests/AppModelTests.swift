@@ -4,12 +4,19 @@ import XCTest
 import KlickEngine
 @testable import KlickKit
 
+/// Settings kept in memory: the tests leave nothing in the preferences of the user.
+final class MemoryStore: SettingsStore {
+    var data: Data?
+    func load() -> Data? { data }
+    func save(_ data: Data) { self.data = data }
+}
+
 @MainActor
 final class AppModelTests: XCTestCase {
-    func makeModel(defaults: UserDefaults? = nil) throws -> (AppModel, Engine) {
+    func makeModel(store: SettingsStore? = nil) throws -> (AppModel, Engine) {
         let engine = try Engine(offline: true, rate: 48000)
         let player = Player(engine: engine, soundsDirectory: PlayerTests.sounds)
-        return (AppModel(player: player, defaults: defaults), engine)
+        return (AppModel(player: player, store: store), engine)
     }
 
     func testThePlayButtonStartsWhatThePageIsAbout() throws {
@@ -42,23 +49,21 @@ final class AppModelTests: XCTestCase {
 
     func testAFailureIsShownNotThrown() throws {
         let engine = try Engine(offline: true, rate: 48000)
-        let model = AppModel(player: Player(engine: engine, soundsDirectory: URL(fileURLWithPath: "/nonexistent")), defaults: nil)
+        let model = AppModel(player: Player(engine: engine, soundsDirectory: URL(fileURLWithPath: "/nonexistent")), store: nil)
         model.togglePlayback()
         XCTAssertFalse(model.isPlaying)
         XCTAssertNotNil(model.errorMessage)
     }
 
     func testSettingsAreKeptBetweenLaunches() throws {
-        let suite = "klick-test-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let (first, _) = try makeModel(defaults: defaults)
+        let store = MemoryStore()
+        let (first, _) = try makeModel(store: store)
         first.settings.tempo = 97
         first.settings.countIn = .twoBars
-        let (second, _) = try makeModel(defaults: defaults)
+        let (second, _) = try makeModel(store: store)
         XCTAssertEqual(second.settings.tempo, 97)
         XCTAssertEqual(second.settings.countIn, .twoBars)
-        let (fresh, _) = try makeModel(defaults: nil)
+        let (fresh, _) = try makeModel(store: nil)
         XCTAssertEqual(fresh.settings.tempo, 120)
     }
 

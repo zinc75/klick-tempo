@@ -35,6 +35,9 @@ final class PlayerTests: XCTestCase {
         run(engine, player, seconds: 2.1) { if let b = player.beat, seen.last != b.beat || seen.isEmpty { seen.append(b.beat) } }
         XCTAssertGreaterThanOrEqual(player.beatCount, 4)
         XCTAssertEqual(Array(seen.prefix(5)), [0, 1, 2, 3, 0])
+        XCTAssertEqual(player.barCount, 2, "bars begin at 0 s and 2 s")
+        XCTAssertEqual(player.beatDuration, 0.5, accuracy: 0.001)
+        XCTAssertGreaterThan(player.lastBeatTime, Date.distantPast)
         XCTAssertEqual(player.tempo, 120, accuracy: 0.01)
         XCTAssertEqual(player.phase, .playing)
         player.stop()

@@ -43,7 +43,7 @@ private struct HeroCard: View {
                     NudgeButton(label: "−10") { model.nudgeTempo(-10) }
                     NudgeButton(label: "−1") { model.nudgeTempo(-1) }
                 }
-                Text(verbatim: counting ? "\(player.countInRemaining)" : "\(Int(model.settings.tempo.rounded()))")
+                Text(verbatim: counting ? "\(player.countInRemaining)" : "\(Int(shownTempo.rounded()))")
                     .font(.system(size: 120, weight: .ultraLight))
                     .monospacedDigit()
                     .frame(minWidth: 260)
@@ -75,7 +75,7 @@ private struct HeroCard: View {
 
             HStack {
                 MeterControls().frame(maxWidth: .infinity, alignment: .leading)
-                GoButton(isPlaying: model.isPlaying, diameter: 84) { model.togglePlayback() }
+                GoButton(diameter: 84)
                 VolumeControls().frame(maxWidth: .infinity, alignment: .trailing)
             }
             .padding(.top, 10)
@@ -92,6 +92,12 @@ private struct HeroCard: View {
                 if lit == index { lit = nil }
             }
         }
+    }
+
+    /// The tempo that is set, or, while the speed trainer runs, the one that plays now (it rises bar after bar).
+    private var shownTempo: Double {
+        let player = model.player
+        return model.settings.trainer.isEnabled && player.phase == .playing && player.tempo > 0 ? player.tempo : model.settings.tempo
     }
 
     // The beat that is heard now, for the lamps and the staff: lit for a moment at each beat.

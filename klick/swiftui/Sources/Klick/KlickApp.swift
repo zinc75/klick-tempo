@@ -76,7 +76,7 @@ struct KlickApp: App {
             engine = try! Engine(offline: true)
         }
         let player = Player(engine: engine, soundsDirectory: Self.soundsDirectory)
-        let model = AppModel(player: player, defaults: Self.keepsSettings ? .standard : nil)
+        let model = AppModel(player: player, store: Self.keepsSettings ? UserDefaultsStore() : nil)
         model.errorMessage = failure
         #if DEBUG
         // Development aids: KLICK_METER=5/8 and KLICK_PATTERN=X.xxx set the meter and the pattern of the run.

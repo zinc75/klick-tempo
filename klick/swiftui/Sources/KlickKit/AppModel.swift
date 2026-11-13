@@ -9,6 +9,26 @@ public enum Page: String, CaseIterable, Sendable {
     case metronome, map, sounds, output, export
 }
 
+/// Where the settings are kept between two launches.
+public protocol SettingsStore: AnyObject {
+    func load() -> Data?
+    func save(_ data: Data)
+}
+
+/// The preferences of the application.
+public final class UserDefaultsStore: SettingsStore {
+    private let defaults: UserDefaults
+    private let key: String
+
+    public init(_ defaults: UserDefaults = .standard, key: String = "settings") {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    public func load() -> Data? { defaults.data(forKey: key) }
+    public func save(_ data: Data) { defaults.set(data, forKey: key) }
+}
+
 /// Everything the window shows and changes: the page, the settings, the tempo map, the player. The views only read it and call it.
 @MainActor
 @Observable
@@ -26,15 +46,14 @@ public final class AppModel {
     /// What the play button of the settings pages starts: the last of the metronome and the map that was shown.
     public private(set) var lastMode = Mode.simple
 
-    private let defaults: UserDefaults?
-    private static let settingsKey = "settings"
+    private let store: SettingsStore?
 
-    /// `defaults` is where the settings are kept (`nil` to keep nothing).
-    public init(player: Player, defaults: UserDefaults?) {
+    /// `store` is where the settings are kept (`nil` to keep nothing).
+    public init(player: Player, store: SettingsStore?) {
         self.player = player
-        self.defaults = defaults
+        self.store = store
         self.document = TempoMapDocument(sections: [MapSection(label: "intro", bars: 8, tempo: 120)])
-        if let data = defaults?.data(forKey: Self.settingsKey), let saved = try? JSONDecoder().decode(ClickSettings.self, from: data) {
+        if let data = store?.load(), let saved = try? JSONDecoder().decode(ClickSettings.self, from: data) {
             settings = saved
         }
         selectedSection = 0
@@ -85,7 +104,7 @@ public final class AppModel {
     // MARK: settings and tempo map
 
     private func settingsChanged() {
-        if let defaults, let data = try? JSONEncoder().encode(settings) { defaults.set(data, forKey: Self.settingsKey) }
+        if let store, let data = try? JSONEncoder().encode(settings) { store.save(data) }
         player.displayOffsetMilliseconds = settings.displayOffsets[outputName] ?? 0
         guard isPlaying else { return }
         do { try player.apply(settings) } catch { errorMessage = error.localizedDescription }
