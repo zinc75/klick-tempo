@@ -40,11 +40,12 @@ Tested on macOS, on arm64 and on x86_64 (under Rosetta).
 
 ### Patches
 
-Three patches in `patches/`, none of which changes what the `klick` program does (its exports are byte for byte the same with and without them). Nothing else needed to change for macOS.
+Four patches in `patches/`, none of which changes what the `klick` program does (its exports are byte for byte the same with and without them). Nothing else needed to change for macOS.
 
 - `0001`: `KLICK_DATA_DIR` overrides the sounds directory compiled in, so an application can ship the sounds in its bundle.
 - `0002`: an optional callback that reports every beat (section, bar, beat, tempo, accent) from the audio thread, for a program that embeds the engine.
 - `0003`: the tempo map metronome tests for the generic transport interface instead of the JACK class, so the engine links without libjack.
+- `0004`: the simple metronome can start after a delay, so that a count-in played beside it ends exactly when it begins.
 
 ## Layout
 

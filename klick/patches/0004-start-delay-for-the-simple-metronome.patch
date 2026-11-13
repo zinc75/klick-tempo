@@ -1,0 +1,39 @@
+--- a/src/metronome_simple.hh
++++ b/src/metronome_simple.hh
+@@ -39,6 +39,9 @@
+ 
+     void set_all(TempoMap::Entry const & params);
+ 
++    // The first beat is played this many frames after start(); 0 by default. Set it before start().
++    void set_start_delay(nframes_t frames) { _start_delay = frames; }
++
+     void tap(double now);
+     void tap();
+ 
+@@ -73,6 +76,7 @@
+ 
+     nframes_t _frame;
+     nframes_t _next;
++    nframes_t _start_delay;
+     int _beat;
+     int _bar;
+ 
+--- a/src/metronome_simple.cc
++++ b/src/metronome_simple.cc
+@@ -30,6 +30,7 @@
+   , _denom(4)
+   , _frame(0)
+   , _next(0)
++  , _start_delay(0)
+   , _beat(0)
+   , _bar(0)
+   , _tapped(false)
+@@ -102,7 +103,7 @@
+ {
+     _beat = 0;
+     _bar = 0;
+-    _next = 0;
++    _next = _start_delay;
+     _frame = 0;
+ 
+     if (_tempo_increment && _tempo_start) {
