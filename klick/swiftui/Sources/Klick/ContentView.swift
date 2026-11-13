@@ -113,7 +113,7 @@ struct PageView: View {
         case .map: MapPage()
         case .sounds: SoundsPage()
         case .output: OutputPage()
-        case .export: PagePlaceholder(title: "Exporter", text: "Une piste de clics dans un fichier audio.")
+        case .export: ExportPage()
         }
     }
 }

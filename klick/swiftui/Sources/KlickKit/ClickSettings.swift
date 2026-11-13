@@ -86,6 +86,16 @@ public struct ClickSettings: Codable, Equatable, Sendable {
         setBeats(MeterRules.numerator(beats, for: d))
     }
 
+    /// The two files of the sound, in the folder of the sounds of klick for a built-in one.
+    public func soundFiles(in directory: URL) -> (accent: URL, normal: URL) {
+        switch sound {
+        case .builtIn(let built):
+            return (directory.appendingPathComponent("\(built.fileName)_emphasis.wav"), directory.appendingPathComponent("\(built.fileName)_normal.wav"))
+        case .files(let accent, let normal):
+            return (URL(fileURLWithPath: accent), URL(fileURLWithPath: normal))
+        }
+    }
+
     /// Pitch as the factor klick takes (`-w`).
     public var pitchFactor: Double { pow(2, pitch / 12) }
 }

@@ -97,16 +97,7 @@ public final class Player {
     /// The tempo map to play, from its start or from the bar `startingAtBar` (counted from the start of the map, from 0; a bar
     /// that is not in the map means the start); takes effect at the next start.
     public func setMap(_ sections: [MapSection], tempoMultiplier: Double = 1, startingAtBar bar: Int = 0) throws {
-        var from = 0, skipped = 0
-        if bar > 0 {
-            var left = bar
-            for (index, section) in sections.enumerated() {
-                if left < section.bars { from = index; skipped = left; break }
-                left -= section.bars
-            }
-        }
-        var played = Array(sections[from...])
-        if skipped > 0 { played[0] = played[0].trimmed(skippingBars: skipped) }
+        let (played, from, skipped) = MapSection.played(sections, fromBar: bar)
         try engine.setMap(played.map(\.engineSection), tempoMultiplier: tempoMultiplier)
         map = sections
         startSection = from

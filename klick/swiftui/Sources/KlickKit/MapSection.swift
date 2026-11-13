@@ -65,6 +65,30 @@ public struct MapSection: Identifiable, Equatable, Sendable {
         tempo = list[0]
     }
 
+    /// The sections to play from the bar `bar` of the map (counted from 0): the sections from the one that holds it on, the first
+    /// without the bars before `bar`. A bar that is not in the map means the whole map.
+    public static func played(_ sections: [MapSection], fromBar bar: Int) -> (sections: [MapSection], firstIndex: Int, skippedBars: Int) {
+        var from = 0, skipped = 0
+        if bar > 0 {
+            var left = bar
+            for (index, section) in sections.enumerated() {
+                if left < section.bars { from = index; skipped = left; break }
+                left -= section.bars
+            }
+        }
+        var played = Array(sections[from...])
+        if skipped > 0 { played[0] = played[0].trimmed(skippingBars: skipped) }
+        return (played, from, skipped)
+    }
+
+    /// Seconds a section lasts: at its tempo, or on average along a ramp, or exactly beat by beat when the tempos are listed.
+    public var seconds: Double {
+        func beat(_ tempo: Double) -> Double { 60 / max(tempo, 1) * 4 / Double(max(denominator, 1)) }
+        if let list = tempi, !list.isEmpty { return list.reduce(0) { $0 + beat($1) } }
+        let average = tempoEnd.map { ($0 + tempo) / 2 } ?? tempo
+        return Double(bars * beats) * beat(average)
+    }
+
     /// The section without its first `k` bars, to start in the middle of it: a ramp starts where it has got to, and a list of
     /// tempos loses its first values.
     public func trimmed(skippingBars k: Int) -> MapSection {
