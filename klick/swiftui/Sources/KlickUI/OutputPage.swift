@@ -75,23 +75,32 @@ struct OutputPage: View {
     }
 }
 
-struct GroupTitle: View {
+/// The building blocks of the page "Sortie", public so that a backend that comes from another library lays out its own groups the same way.
+/// The title of a group.
+public struct GroupTitle: View {
     let text: LocalizedStringKey
-    init(_ text: LocalizedStringKey) { self.text = text }
-    var body: some View { Text(text).font(.headline).padding(.top, 6) }
+    public init(_ text: LocalizedStringKey) { self.text = text }
+    public var body: some View { Text(text).font(.headline).padding(.top, 6) }
 }
 
 extension View {
-    func groupBox() -> some View { self.padding(.horizontal, 14).blockBackground() }
+    /// The block of glass around the rows of a group.
+    public func groupBox() -> some View { self.padding(.horizontal, 14).blockBackground() }
 }
 
 /// A row of a group: title, optional detail, controls at the right.
-struct OutputRow<Controls: View>: View {
+public struct OutputRow<Controls: View>: View {
     let title: LocalizedStringKey
     var detail: Text?
-    @ViewBuilder let controls: Controls
+    let controls: Controls
 
-    var body: some View {
+    public init(title: LocalizedStringKey, detail: Text? = nil, @ViewBuilder controls: () -> Controls) {
+        self.title = title
+        self.detail = detail
+        self.controls = controls()
+    }
+
+    public var body: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)

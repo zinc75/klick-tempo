@@ -203,15 +203,18 @@ struct KlickEngine
 namespace {
 
 // The CoreAudio backend: the interface of klick_engine.cpp's own library, opened on the device of the system.
-void coreaudio_start(void * a) { static_cast<AudioInterfaceCoreAudio *>(a)->start(); }
-void coreaudio_stop(void * a) { static_cast<AudioInterfaceCoreAudio *>(a)->stop(); }
-void coreaudio_destroy(void * a) { delete static_cast<AudioInterfaceCoreAudio *>(a); }
-uint32_t coreaudio_latency(void * a) { return static_cast<AudioInterfaceCoreAudio *>(a)->output_latency_frames(); }
+// (The backend holds a pointer to the AudioInterface base class, as a void pointer: that is what the engine casts it back to.)
+AudioInterfaceCoreAudio * as_coreaudio(void * a) { return static_cast<AudioInterfaceCoreAudio *>(static_cast<AudioInterface *>(a)); }
+void coreaudio_start(void * a) { as_coreaudio(a)->start(); }
+void coreaudio_stop(void * a) { as_coreaudio(a)->stop(); }
+void coreaudio_destroy(void * a) { delete as_coreaudio(a); }
+uint32_t coreaudio_latency(void * a) { return as_coreaudio(a)->output_latency_frames(); }
 
 KlickBackend make_coreaudio_backend(uint32_t rate)
 {
     KlickBackend b = KlickBackend();
-    b.audio = new AudioInterfaceCoreAudio(rate ? rate : 48000);
+    AudioInterface * audio = new AudioInterfaceCoreAudio(rate ? rate : 48000);
+    b.audio = audio;
     b.id = "coreaudio";
     b.realtime = 1;
     b.start = coreaudio_start; b.stop = coreaudio_stop; b.destroy = coreaudio_destroy; b.output_latency = coreaudio_latency;
@@ -219,12 +222,13 @@ KlickBackend make_coreaudio_backend(uint32_t rate)
 }
 
 // The offline backend: renders only when klick_engine_render is called.
-void offline_destroy(void * a) { delete static_cast<AudioInterfaceOffline *>(a); }
+void offline_destroy(void * a) { delete static_cast<AudioInterfaceOffline *>(static_cast<AudioInterface *>(a)); }
 
 KlickBackend make_offline_backend(uint32_t rate)
 {
     KlickBackend b = KlickBackend();
-    b.audio = new AudioInterfaceOffline(rate ? rate : 48000);
+    AudioInterface * audio = new AudioInterfaceOffline(rate ? rate : 48000);
+    b.audio = audio;
     b.id = "offline";
     b.realtime = 0;
     b.destroy = offline_destroy;

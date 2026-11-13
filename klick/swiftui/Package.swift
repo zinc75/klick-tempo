@@ -12,6 +12,15 @@ let engineDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent(
 let package = Package(
     name: "Klick",
     platforms: [.macOS("15.0")],
+    // What an application of the family that adds a backend uses (the version of the collection, with JACK): the window, the model,
+    // the engine and its C interface.
+    products: [
+        .library(name: "KlickUI", targets: ["KlickUI"]),
+        .library(name: "KlickKit", targets: ["KlickKit"]),
+        .library(name: "KlickEngine", targets: ["KlickEngine"]),
+        .library(name: "CKlickEngine", targets: ["CKlickEngine"]),
+        .executable(name: "Klick", targets: ["Klick"]),
+    ],
     dependencies: [
         // Look and feel shared with the other tools (glass blocks, window fill), MIT.
         .package(path: "../../shared/MatrixKit"),

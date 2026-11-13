@@ -263,14 +263,22 @@ private struct PillMenu: View {
 }
 
 /// A row of the menu of the pill: a check mark when it is the choice, a title, a line under it.
-struct PillRow: View {
+public struct PillRow: View {
     let title: Text
     var detail: String?
     var selected: Bool?
     let close: () -> Void
     let action: () -> Void
 
-    var body: some View {
+    public init(title: Text, detail: String? = nil, selected: Bool? = nil, close: @escaping () -> Void, action: @escaping () -> Void) {
+        self.title = title
+        self.detail = detail
+        self.selected = selected
+        self.close = close
+        self.action = action
+    }
+
+    public var body: some View {
         Button {
             action()
             close()

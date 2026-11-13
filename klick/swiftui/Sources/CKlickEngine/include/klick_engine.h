@@ -66,7 +66,7 @@ typedef struct {
  * klick_engine_create_with_backend. The structure is copied; the engine owns 'audio' from the call on. */
 typedef struct KlickBackend {
     const char *id;                     /* "coreaudio", "offline", "jack", ...; a string that stays valid */
-    void *audio;                        /* the AudioInterface of the backend, as a void pointer */
+    void *audio;                        /* the AudioInterface of the backend: a pointer to that base class (not to a derived one), as a void pointer */
     int realtime;                       /* 1 when the backend has an audio thread of its own, 0 when nothing runs unless asked */
     void (*start)(void *audio);         /* opens the stream once the engine has set its process callback; may be NULL */
     void (*stop)(void *audio);          /* may be NULL; called before destroy */

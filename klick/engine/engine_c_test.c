@@ -92,12 +92,12 @@ int main(int argc, char **argv)
 
     /* tempo map: 1 bar 4/4 at 120, 1 bar 3/4 from 90 to 120, a silent 5/8 bar at 140 */
     KlickSection map[3] = {
-        { "intro", 1, 4, 4, 120.0f, 0.0f, "Xxxx", 1.0f },
-        { NULL, 1, 3, 4, 90.0f, 120.0f, NULL, 1.0f },
-        { "quiet", 1, 5, 8, 140.0f, 0.0f, "X.xxx", 0.0f },
+        { "intro", 1, 4, 4, 120.0f, 0.0f, "Xxxx", 1.0f, NULL, 0 },
+        { NULL, 1, 3, 4, 90.0f, 120.0f, NULL, 1.0f, NULL, 0 },
+        { "quiet", 1, 5, 8, 140.0f, 0.0f, "X.xxx", 0.0f, NULL, 0 },
     };
     check(klick_engine_set_map(e, map, 3, 1.0f, err, sizeof err), "tempo map set", err);
-    KlickSection bad = { NULL, 0, 4, 4, 120.0f, 0.0f, NULL, 1.0f };
+    KlickSection bad = { NULL, 0, 4, 4, 120.0f, 0.0f, NULL, 1.0f, NULL, 0 };
     check(!klick_engine_set_map(e, &bad, 1, 1.0f, err, sizeof err) && strstr(err, "section 1"), "a section without bars is refused", err);
     check(klick_engine_start(e, KLICK_MODE_MAP, err, sizeof err), "map started", err);
     check(klick_engine_is_playing(e), "map playing", "");
