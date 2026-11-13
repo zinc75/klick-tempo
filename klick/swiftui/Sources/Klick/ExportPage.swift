@@ -6,6 +6,7 @@ import AppKit
 import UniformTypeIdentifiers
 import MatrixKit
 import KlickKit
+import AppearanceKit
 
 /// Writes the metronome or the tempo map to a file: audio (WAV, rendered without a sound device) or MIDI (the tempos and the meters,
 /// and the clicks on a percussion track).
@@ -43,7 +44,7 @@ struct ExportPage: View {
                             Text("Métronome").tag(Source.metronome.rawValue)
                             Text("Carte de tempo").tag(Source.map.rawValue)
                         }
-                        .pickerStyle(.segmented).labelsHidden().fixedSize()
+                        .pickerStyle(.segmented).accentTint().labelsHidden().fixedSize()
                     }
                     Divider()
                     if source == .metronome {
@@ -56,7 +57,7 @@ struct ExportPage: View {
                                 Text("Du début").tag(false)
                                 Text("Du curseur").tag(true)
                             }
-                            .pickerStyle(.segmented).labelsHidden().fixedSize()
+                            .pickerStyle(.segmented).accentTint().labelsHidden().fixedSize()
                         }
                     }
                     Divider()
@@ -65,7 +66,7 @@ struct ExportPage: View {
                             Text("Audio (WAV)").tag(Format.wav.rawValue)
                             Text("MIDI").tag(Format.midi.rawValue)
                         }
-                        .pickerStyle(.segmented).labelsHidden().fixedSize()
+                        .pickerStyle(.segmented).accentTint().labelsHidden().fixedSize()
                     }
                     if format == .wav {
                         Divider()
@@ -88,13 +89,13 @@ struct ExportPage: View {
                         }
                         Divider()
                         ExportRow(title: "Décompte", detail: Text("Celui de la page Métronome ou de la carte, entendu au début du fichier.")) {
-                            Toggle("Décompte", isOn: $includeCountIn).labelsHidden().toggleStyle(.switch)
+                            Toggle("Décompte", isOn: $includeCountIn).labelsHidden().toggleStyle(.switch).accentTint()
                                 .disabled(model.settings.countIn == .none)
                         }
                     } else {
                         Divider()
                         ExportRow(title: "Clics", detail: Text("Une piste de percussions avec les accents ; sans elle, seulement les tempos et les mesures.")) {
-                            Toggle("Clics", isOn: $midiClicks).labelsHidden().toggleStyle(.switch)
+                            Toggle("Clics", isOn: $midiClicks).labelsHidden().toggleStyle(.switch).accentTint()
                         }
                     }
                 }
@@ -105,10 +106,10 @@ struct ExportPage: View {
 
                 HStack(spacing: 12) {
                     Button(LocalizedStringKey(run.isRunning ? "Annuler" : "Exporter…")) { run.isRunning ? run.cancel() : start() }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(.borderedProminent).accentTint()
                         .disabled(!run.isRunning && !canExport)
                     if run.isRunning {
-                        ProgressView(value: run.progress).frame(width: 220)
+                        ProgressView(value: run.progress).accentTint().frame(width: 220)
                         Text("Écriture… \(Int((run.progress * 100).rounded())) %").font(.callout).monospacedDigit().foregroundStyle(.secondary)
                     }
                 }

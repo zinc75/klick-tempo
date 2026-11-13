@@ -4,10 +4,13 @@
 import SwiftUI
 import KlickEngine
 import KlickKit
+import AppearanceKit
 
 /// Removes the menus that the system adds by itself and that have nothing left in them.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var pending = false
+    /// The look chosen by the user; given by the application before the first window, applied at launch.
+    static var appearance: AppearanceSettings?
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
@@ -15,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Run from the build folder, without a bundle, the application is not a regular one: make it so, and active.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        AppearanceChoice.saved.apply()
+        Self.appearance?.applyAppearance()
         prune()
         NotificationCenter.default.addObserver(forName: NSMenu.didAddItemNotification, object: nil, queue: .main) { [weak self] _ in
             self?.schedule()
@@ -44,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct KlickApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var model: AppModel
+    @State private var appearance: AppearanceSettings
 
     /// The sounds of klick: in the application bundle; in a development run, where the build scripts put them.
     static var soundsDirectory: URL {
@@ -102,12 +106,31 @@ struct KlickApp: App {
         }
         #endif
         _model = State(initialValue: model)
+
+        // The colour of the application is a warm orange (the orange of the system is yellower); the look is dark until the user
+        // says otherwise.
+        var defaults = UserDefaults.standard
+        #if DEBUG
+        // Development aids: KLICK_APPEARANCE=dark|system|light and KLICK_ACCENT=app|system|blue|purple|pink|red|orange|green
+        // set the look of the run, in a store of their own that is not kept.
+        let environment = ProcessInfo.processInfo.environment
+        if environment["KLICK_APPEARANCE"] != nil || environment["KLICK_ACCENT"] != nil {
+            defaults = UserDefaults(suiteName: "klick.debug.\(UUID().uuidString)") ?? defaults
+            if let value = environment["KLICK_APPEARANCE"] { defaults.set(value, forKey: AppearanceSettings.modeKey) }
+            if let value = environment["KLICK_ACCENT"] { defaults.set(value, forKey: AppearanceSettings.accentKey) }
+        }
+        #endif
+        let appearance = AppearanceSettings(appAccent: .orange, appColor: Color(red: 1.0, green: 0.42, blue: 0.10), defaults: defaults)
+        AppDelegate.appearance = appearance
+        _appearance = State(initialValue: appearance)
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(model)
+                .environment(appearance)
+                .appAccent(appearance)
                 .frame(minWidth: 1100, minHeight: 740)
         }
         .defaultSize(width: 1180, height: 760)
@@ -125,6 +148,11 @@ struct KlickApp: App {
                 Button("Sons") { model.show(.sounds) }.keyboardShortcut("3", modifiers: .command)
                 Button("Sortie") { model.show(.output) }.keyboardShortcut("4", modifiers: .command)
                 Button("Exporter") { model.show(.export) }.keyboardShortcut("5", modifiers: .command)
+                Button("Affichage") { model.show(.appearance) }.keyboardShortcut("6", modifiers: .command)
+            }
+            // The settings of the system convention (command comma) are the page "Affichage".
+            CommandGroup(replacing: .appSettings) {
+                Button("Réglages…") { model.show(.appearance) }.keyboardShortcut(",", modifiers: .command)
             }
             CommandGroup(replacing: .help) {}
             CommandMenu("Lecture") {

@@ -3,10 +3,12 @@
 
 import SwiftUI
 import KlickKit
+import AppearanceKit
 
 /// One bar on a single-line percussion staff: the signs come from `StaffLayout`, this view only draws them. The beat that is
 /// heard now (`lit`) takes the colour of the accent.
 struct StaffView: View {
+    @Environment(\.appAccentColor) private var accent
     let layout: StaffLayout
     var lit: Int?
     var scale: CGFloat = 1.3
@@ -24,7 +26,7 @@ struct StaffView: View {
     private func draw(_ context: inout GraphicsContext) {
         let y = StaffLayout.lineY
         let ink = GraphicsContext.Shading.foreground
-        let hot = GraphicsContext.Shading.color(.accentColor)
+        let hot = GraphicsContext.Shading.color(accent)
 
         // the line, and the barlines at both ends
         var line = Path(); line.move(to: CGPoint(x: 8, y: y)); line.addLine(to: CGPoint(x: layout.width - 6, y: y))

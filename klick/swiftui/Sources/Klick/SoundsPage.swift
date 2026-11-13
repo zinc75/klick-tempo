@@ -7,6 +7,7 @@ import AVFoundation
 import UniformTypeIdentifiers
 import MatrixKit
 import KlickKit
+import AppearanceKit
 
 /// The sounds: one of the four of klick, or two files; each can be heard; then the volumes and the pitch.
 struct SoundsPage: View {
@@ -43,19 +44,19 @@ struct SoundsPage: View {
                 Text("Réglages du son").font(.headline).padding(.top, 6)
                 VStack(spacing: 0) {
                     SettingRow(title: "Volume de l'accent") {
-                        Slider(value: $model.settings.accentVolume, in: 0...1).frame(width: 160)
+                        Slider(value: $model.settings.accentVolume, in: 0...1).accentTint().frame(width: 160)
                         Text(verbatim: model.settings.accentVolume.formatted(.number.precision(.fractionLength(2))))
                             .font(.system(.callout, design: .monospaced)).frame(width: 40, alignment: .trailing)
                     }
                     Divider()
                     SettingRow(title: "Volume des autres temps") {
-                        Slider(value: $model.settings.normalVolume, in: 0...1).frame(width: 160)
+                        Slider(value: $model.settings.normalVolume, in: 0...1).accentTint().frame(width: 160)
                         Text(verbatim: model.settings.normalVolume.formatted(.number.precision(.fractionLength(2))))
                             .font(.system(.callout, design: .monospaced)).frame(width: 40, alignment: .trailing)
                     }
                     Divider()
                     SettingRow(title: "Hauteur", detail: pitchDetail) {
-                        Slider(value: $model.settings.pitch, in: -12...12, step: 1).frame(width: 160)
+                        Slider(value: $model.settings.pitch, in: -12...12, step: 1).accentTint().frame(width: 160)
                         Text(pitchText).font(.system(.callout, design: .monospaced)).frame(width: 90, alignment: .trailing)
                     }
                 }
@@ -83,7 +84,7 @@ struct SoundsPage: View {
 }
 
 /// A row of a group: title, optional detail, and the controls at the right.
-private struct SettingRow<Controls: View>: View {
+struct SettingRow<Controls: View>: View {
     let title: LocalizedStringKey
     var detail: String?
     @ViewBuilder let controls: Controls
@@ -122,6 +123,7 @@ private func soundDetail(_ sound: ClickSound.BuiltIn) -> LocalizedStringKey {
 }
 
 private struct BuiltInRow: View {
+    @Environment(\.appAccentColor) private var accent
     let sound: ClickSound.BuiltIn
     @Environment(AppModel.self) private var model
 
@@ -134,7 +136,7 @@ private struct BuiltInRow: View {
                     Text(soundName(sound)).fontWeight(.medium)
                     Waveform(url: KlickApp.soundsDirectory.appendingPathComponent("\(sound.fileName)_emphasis.wav"))
                         .frame(width: 120, height: 26)
-                        .foregroundStyle(selected ? Color.accentColor : .secondary)
+                        .foregroundStyle(selected ? accent : .secondary)
                 }
                 Text(soundDetail(sound)).font(.caption).foregroundStyle(.secondary)
             }
@@ -218,12 +220,13 @@ private struct ListenButtons: View {
 }
 
 private struct RadioMark: View {
+    @Environment(\.appAccentColor) private var accent
     let selected: Bool
 
     var body: some View {
         Image(systemName: selected ? "largecircle.fill.circle" : "circle")
             .font(.system(size: 16))
-            .foregroundStyle(selected ? Color.accentColor : .secondary)
+            .foregroundStyle(selected ? accent : .secondary)
             .frame(width: 20)
     }
 }

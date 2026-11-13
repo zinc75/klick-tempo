@@ -15,6 +15,8 @@ let package = Package(
     dependencies: [
         // Look and feel shared with the other tools (glass blocks, window fill), MIT.
         .package(path: "../../shared/MatrixKit"),
+        // The look (dark, system, light) and the accent, with the content of the settings window, MIT.
+        .package(path: "../../shared/AppearanceKit"),
     ],
     targets: [
         // The C interface of the engine (klick_engine.h) and the link settings of its static library.
@@ -40,7 +42,11 @@ let package = Package(
         // The SwiftUI application. As in JackMate, UI code is main-actor isolated by default.
         .executableTarget(
             name: "Klick",
-            dependencies: ["KlickKit", "KlickEngine", .product(name: "MatrixKit", package: "MatrixKit")],
+            dependencies: [
+                "KlickKit", "KlickEngine",
+                .product(name: "MatrixKit", package: "MatrixKit"),
+                .product(name: "AppearanceKit", package: "AppearanceKit"),
+            ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
         ),
     ]

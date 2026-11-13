@@ -5,6 +5,7 @@ import SwiftUI
 import MatrixKit
 import KlickEngine
 import KlickKit
+import AppearanceKit
 
 /// The metronome: the tempo and the beats at the top, then the tap tempo, the speed trainer and the start.
 struct MetronomePage: View {
@@ -59,7 +60,7 @@ private struct HeroCard: View {
             }
             Text(LocalizedStringKey(counting ? "DÉCOMPTE" : "BATTEMENTS PAR MINUTE")).font(.caption).tracking(1.5).foregroundStyle(.tertiary)
             Text(verbatim: TempoWord.name(for: model.settings.tempo)).font(.title3).italic().foregroundStyle(.secondary)
-            Slider(value: $model.settings.tempo, in: AppModel.tempoRange, step: 1)
+            Slider(value: $model.settings.tempo, in: AppModel.tempoRange, step: 1).accentTint()
                 .frame(maxWidth: 620)
                 .padding(.top, 6)
 
@@ -125,6 +126,7 @@ private struct NudgeButton: View {
 
 /// One lamp per beat of the bar: it flashes with the click; a click on a lamp changes its accent (accent, normal, silent).
 private struct BeatLamps: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     let lit: Int?
 
@@ -143,7 +145,7 @@ private struct BeatLamps: View {
                             // A silent beat has no fill: without this only the dot would take the click.
                             .contentShape(Circle())
                             .foregroundStyle(lit == i ? Color.white : .secondary)
-                            .shadow(color: lit == i ? Color.accentColor.opacity(0.7) : .clear, radius: 14)
+                            .shadow(color: lit == i ? accent.opacity(0.7) : .clear, radius: 14)
                             .scaleEffect(lit == i ? 1.1 : 1)
                     }
                     .buttonStyle(.plain)
@@ -163,7 +165,7 @@ private struct BeatLamps: View {
 
     private func fill(_ c: Character, isLit: Bool) -> Color {
         if c == "." { return .clear }
-        if isLit { return Color.accentColor }
+        if isLit { return accent }
         return Color.primary.opacity(0.12)
     }
 
@@ -192,7 +194,7 @@ private struct MeterControls: View {
             Picker("Valeur du temps", selection: Binding(get: { model.settings.denominator }, set: { model.settings.setDenominator($0) })) {
                 ForEach(MeterRules.denominators, id: \.self) { Text(verbatim: "\($0)").tag($0) }
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.segmented).accentTint()
             .labelsHidden()
             .fixedSize()
         }
@@ -207,7 +209,7 @@ private struct VolumeControls: View {
         VStack(alignment: .trailing, spacing: 8) {
             HStack(spacing: 8) {
                 Text("Volume").font(.callout).foregroundStyle(.secondary)
-                Slider(value: $model.settings.masterVolume, in: 0...1).frame(width: 96)
+                Slider(value: $model.settings.masterVolume, in: 0...1).accentTint().frame(width: 96)
                     .disabled(model.settings.isQuiet)
                     .opacity(model.settings.isQuiet ? 0.4 : 1)
             }
@@ -236,7 +238,7 @@ private struct TapTempoCard: View {
                     RegularityRow(tap: tap)
                     VStack(spacing: 6) {
                         Button { model.applyTap() } label: { Text("Appliquer").frame(maxWidth: .infinity) }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.borderedProminent).accentTint()
                             .disabled(!tap.canApply)
                             .help("Appliquer le tempo")
                         Button { model.resetTap() } label: { Text("Recommencer").frame(maxWidth: .infinity) }
@@ -295,6 +297,7 @@ private struct TrackpadStyle: ButtonStyle {
 
 /// How even the taps are: a percentage and a bar (an ellipsis until there are four taps).
 private struct RegularityRow: View {
+    @Environment(\.appAccentColor) private var accent
     let tap: TapTempo
 
     var body: some View {
@@ -309,7 +312,7 @@ private struct RegularityRow: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule().fill(.quaternary)
-                    Capsule().fill(Color.accentColor).frame(width: geometry.size.width * (value ?? 0))
+                    Capsule().fill(accent).frame(width: geometry.size.width * (value ?? 0))
                 }
             }
             .frame(height: 5)
@@ -330,7 +333,7 @@ private struct TrainerCard: View {
                 Text("Entraînement de vitesse").font(.headline)
                 Spacer()
                 Toggle("Entraînement de vitesse", isOn: $model.settings.trainer.isEnabled)
-                    .toggleStyle(.switch)
+                    .toggleStyle(.switch).accentTint()
                     .labelsHidden()
             }
             Group {
@@ -400,7 +403,7 @@ private struct StartCard: View {
                 Text("Décompte audible")
                 Spacer()
                 Toggle("Décompte audible", isOn: $model.settings.isCountInAudible)
-                    .toggleStyle(.switch)
+                    .toggleStyle(.switch).accentTint()
                     .labelsHidden()
             }
             .disabled(model.settings.countIn == .none || model.settings.isQuiet)

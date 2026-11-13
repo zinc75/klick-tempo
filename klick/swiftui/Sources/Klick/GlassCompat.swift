@@ -9,10 +9,10 @@ import MatrixKit
 extension View {
     /// An accent glass disc, for the round button.
     @ViewBuilder
-    func accentGlassDisc() -> some View {
+    func accentGlassDisc(_ accent: Color) -> some View {
         if #available(macOS 26, *), GlassSupport.enabled {
             self
-                .glassEffect(.regular.tint(.accentColor), in: .circle)   // not interactive: that glass would take the click from the button
+                .glassEffect(.regular.tint(accent), in: .circle)   // not interactive: that glass would take the click from the button
                 .overlay { Circle().inset(by: 0.5).strokeBorder(.white.opacity(0.4), lineWidth: 0.75) }
                 .overlay { Circle().strokeBorder(.black.opacity(0.5), lineWidth: 0.5) }
                 .overlay(alignment: .top) {
@@ -21,14 +21,14 @@ extension View {
         } else {
             self.background {
                 Circle()
-                    .fill(LinearGradient(colors: [Color.accentColor.opacity(0.78), Color.accentColor, Color.accentColor.opacity(0.62)],
+                    .fill(LinearGradient(colors: [accent.opacity(0.78), accent, accent.opacity(0.62)],
                                          startPoint: .top, endPoint: .bottom))
                     .overlay(Circle().inset(by: 0.5).strokeBorder(.white.opacity(0.55), lineWidth: 0.5))
                     .overlay(Circle().strokeBorder(.black.opacity(0.5), lineWidth: 0.5))
                     .overlay(alignment: .top) {
                         Ellipse().fill(.white.opacity(0.35)).frame(width: 30, height: 14).offset(y: 5).blur(radius: 3)
                     }
-                    .shadow(color: Color.accentColor.opacity(0.4), radius: 8, y: 4)
+                    .shadow(color: accent.opacity(0.4), radius: 8, y: 4)
             }
         }
     }

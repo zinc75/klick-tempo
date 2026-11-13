@@ -5,6 +5,7 @@ import SwiftUI
 import MatrixKit
 import KlickEngine
 import KlickKit
+import AppearanceKit
 
 /// The choice between the metronome and the map. While the other one plays, the change asks for a confirmation: it stops what
 /// plays, and a map starts again from its first bar. Used by the footer and by the live view.
@@ -20,7 +21,7 @@ struct ModePicker: View {
             Text("Métronome").tag(Mode.simple)
             Text("Carte").tag(Mode.map)
         }
-        .pickerStyle(.segmented)
+        .pickerStyle(.segmented).accentTint()
         .labelsHidden()
         .fixedSize()
         .confirmationDialog(LocalizedStringKey(pendingMode == .map ? "Passer à la carte de tempo ?" : "Passer au métronome ?"),
@@ -87,6 +88,7 @@ struct FooterBar: View {
 /// playing, the rod swings like a pendulum, reaching one side at each beat (a beat on each side, as on a real metronome). A ring
 /// spreads from the disc at the first beat of each bar. Under the pointer the disc swells and glows.
 struct GoButton: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     /// 54 in the footer; larger on the metronome page.
     var diameter: CGFloat = 54
@@ -109,8 +111,8 @@ struct GoButton: View {
             .shadow(color: .black.opacity(0.25), radius: 1.5, y: 1)
             .animation(model.isPlaying ? nil : .spring(duration: 0.4, bounce: 0.3), value: model.isPlaying)
             .frame(width: 54, height: 54)
-            .accentGlassDisc()
-            .shadow(color: Color.accentColor.opacity(isHovered ? 0.55 : 0), radius: isHovered ? 12 : 0)
+            .accentGlassDisc(accent)
+            .shadow(color: accent.opacity(isHovered ? 0.55 : 0), radius: isHovered ? 12 : 0)
             .scaleEffect(isHovered ? 1.08 : 1)
             .scaleEffect(scale)
             .frame(width: diameter, height: diameter)
@@ -120,7 +122,7 @@ struct GoButton: View {
         .onHover { hovering in withAnimation(.spring(duration: 0.22, bounce: 0.35)) { isHovered = hovering } }
         .background {
             // one ring per bar, from the first beat: it appears at once at the size of the disc, then spreads while it fades
-            Circle().stroke(Color.accentColor.mix(with: colorScheme == .dark ? .white : Color(white: 0.25), by: max(0, 1 - ring * 10)).opacity(0.5), lineWidth: 2)   // white (dark mode) or black (light mode) at the start, then the accent
+            Circle().stroke(accent.mix(with: colorScheme == .dark ? .white : Color(white: 0.25), by: max(0, 1 - ring * 10)).opacity(0.5), lineWidth: 2)   // white (dark mode) or black (light mode) at the start, then the accent
                 .frame(width: diameter, height: diameter)
                 .scaleEffect(1 + 0.55 * ring)
                 .opacity(model.isPlaying && ring < 1 ? 1 - ring : 0)

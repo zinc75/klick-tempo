@@ -6,7 +6,7 @@ import Observation
 
 /// The pages of the window: the metronome and the tempo map first, then the settings.
 public enum Page: String, CaseIterable, Sendable {
-    case metronome, map, sounds, output, export
+    case metronome, map, sounds, output, export, appearance
 }
 
 /// Where the settings are kept between two launches.

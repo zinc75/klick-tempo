@@ -6,9 +6,11 @@ import AppKit
 import UniformTypeIdentifiers
 import MatrixKit
 import KlickKit
+import AppearanceKit
 
 /// The tempo map: the file it comes from, the course of the tempo, a bar of each section on a staff, and the table of the sections.
 struct MapPage: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     @State private var editing: SectionEdit?
     @State private var asksToClear = false
@@ -71,7 +73,7 @@ struct MapPage: View {
             HStack(spacing: 6) {
                 Image(systemName: "doc.text")
                 Text(verbatim: MapFiles.displayName(of: model.document))
-                if model.document.isModified { Circle().fill(Color.accentColor).frame(width: 6, height: 6).help("Modifiée depuis le dernier enregistrement") }
+                if model.document.isModified { Circle().fill(accent).frame(width: 6, height: 6).help("Modifiée depuis le dernier enregistrement") }
             }
             .font(.callout).foregroundStyle(.secondary)
             Text("Une suite de sections jouées l'une après l'autre : mesures, tempo ou rampe, accents. Comme une partition de métronome.")
@@ -166,6 +168,7 @@ private struct MapPanel<Content: View>: View {
 
 /// The sections side by side, as wide as their bars, with the tempo drawn across them (steps, ramps, one tempo per beat).
 private struct MapTimeline: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     /// The bar under the pointer while the cursor is dragged; the map moves only when it is let go.
     @State private var dragBar: Int?
@@ -198,8 +201,8 @@ private struct MapTimeline: View {
                 let rect = CGRect(x: x, y: 0, width: width, height: size.height)
                 let selected = index == model.activeSection
                 let shape = Path(roundedRect: rect, cornerRadius: 6)
-                context.fill(shape, with: .color(selected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.06)))
-                context.stroke(shape, with: .color(selected ? Color.accentColor.opacity(0.7) : Color.primary.opacity(0.12)),
+                context.fill(shape, with: .color(selected ? accent.opacity(0.14) : Color.primary.opacity(0.06)))
+                context.stroke(shape, with: .color(selected ? accent.opacity(0.7) : Color.primary.opacity(0.12)),
                                style: StrokeStyle(lineWidth: 1, dash: section.muted ? [4, 3] : []))
                 let label = section.label.isEmpty ? String(localized: "suite") : section.label
                 context.draw(Text(verbatim: label).font(.caption2).foregroundStyle(.secondary),
@@ -213,7 +216,7 @@ private struct MapTimeline: View {
                 var path = Path()
                 if let previous { path.move(to: previous); path.addLine(to: CGPoint(x: points[0].x, y: previous.y)); path.addLine(to: points[0]) } else { path.move(to: points[0]) }
                 for point in points.dropFirst() { path.addLine(to: point) }
-                context.stroke(path, with: .color(Color.accentColor.opacity(section.muted ? 0.4 : 1)),
+                context.stroke(path, with: .color(accent.opacity(section.muted ? 0.4 : 1)),
                                style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 context.draw(Text(verbatim: MapTimelineText.tempo(section)).font(.caption2).foregroundStyle(.primary),
                              at: CGPoint(x: x + 6, y: size.height - 6), anchor: .bottomLeading)
@@ -306,6 +309,7 @@ private struct MapTimeline: View {
 
 /// One bar of each section on a staff.
 private struct MapNotation: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     @State private var position = ScrollPosition()
     @State private var metrics = ScrollMetrics()
@@ -332,8 +336,8 @@ private struct MapNotation: View {
                                   lit: nil, scale: 1)
                     }
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(i == model.activeSection ? Color.accentColor.opacity(0.12) : .clear))
-                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(i == model.activeSection ? Color.accentColor.opacity(0.45) : .clear, lineWidth: 0.5))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(i == model.activeSection ? accent.opacity(0.12) : .clear))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(i == model.activeSection ? accent.opacity(0.45) : .clear, lineWidth: 0.5))
                     .opacity(s.muted ? 0.5 : 1)
                     .contentShape(RoundedRectangle(cornerRadius: 10))
                     .onTapGesture { model.select(section: i) }
@@ -395,6 +399,7 @@ private struct EdgeArrow: View {
 
 /// The sections as a table; a row is selected by a click and edited by its button or a double click.
 private struct SectionTable: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     let edit: (Int) -> Void
 
@@ -419,7 +424,7 @@ private struct SectionTable: View {
                     Text(verbatim: s.pattern).font(.system(.callout, design: .monospaced)).foregroundStyle(.secondary)
                     Text(verbatim: s.volume.formatted(.number.precision(.fractionLength(2)))).monospacedDigit()
                     Toggle("Silencieux", isOn: Binding(get: { s.muted }, set: { value in model.updateSection(at: i) { $0.muted = value } }))
-                        .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                        .labelsHidden().toggleStyle(.switch).accentTint().controlSize(.small)
                     HStack(spacing: 6) {
                         Button("Éditer") { model.select(section: i); edit(i) }
                         Button("Lire d'ici") { model.select(section: i); model.startMap(from: i) }
@@ -430,7 +435,7 @@ private struct SectionTable: View {
                     // the cells touch each other so that the tint of the selected row has no gaps
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 7).padding(.vertical, 6)
-                    .background(i == model.activeSection ? Color.accentColor.opacity(0.12) : .clear)
+                    .background(i == model.activeSection ? accent.opacity(0.12) : .clear)
                 }
                 .contentShape(Rectangle())
                 .onTapGesture(count: 2) { model.select(section: i); edit(i) }
@@ -470,6 +475,7 @@ struct SectionEdit: Identifiable {
 
 /// The sheet that edits one section.
 private struct SectionEditor: View {
+    @Environment(\.appAccentColor) private var accent
     let target: SectionEdit
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -512,7 +518,7 @@ private struct SectionEditor: View {
                         Picker("Valeur du temps", selection: Binding(get: { draft.denominator }, set: { setDenominator($0) })) {
                             ForEach(MeterRules.denominators, id: \.self) { Text(verbatim: "\($0)").tag($0) }
                         }
-                        .pickerStyle(.segmented).labelsHidden().fixedSize()
+                        .pickerStyle(.segmented).accentTint().labelsHidden().fixedSize()
                     }
                 }
                 row("Tempo", detail: LocalizedStringKey(draft.hasTempoPerBeat ? "Un tempo par temps : à modifier dans le fichier." : "Deux valeurs différentes : accélération ou ralentissement progressif.")) {
@@ -533,15 +539,15 @@ private struct SectionEditor: View {
                                 Text(verbatim: c == "." ? "·" : String(c)).frame(width: 18)
                             }
                             .buttonStyle(.bordered).controlSize(.small)
-                            .tint(c == "X" ? Color.accentColor : nil)
+                            .tint(c == "X" ? accent : nil)
                         }
                     }
                 }
                 row("Volume") {
-                    Slider(value: $draft.volume, in: 0...1).frame(width: 140)
+                    Slider(value: $draft.volume, in: 0...1).accentTint().frame(width: 140)
                 }
                 row("Silencieux", detail: "Écrit comme un volume de 0 dans le fichier.", last: true) {
-                    Toggle("Silencieux", isOn: $draft.muted).labelsHidden().toggleStyle(.switch)
+                    Toggle("Silencieux", isOn: $draft.muted).labelsHidden().toggleStyle(.switch).accentTint()
                 }
             }
             .padding(.horizontal, 14)
@@ -553,7 +559,7 @@ private struct SectionEditor: View {
                 }
                 Spacer()
                 Button("Annuler") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("OK") { commit() }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent)
+                Button("OK") { commit() }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).accentTint()
             }
             .padding(.top, 16)
         }

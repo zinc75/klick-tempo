@@ -4,10 +4,12 @@
 import SwiftUI
 import MatrixKit
 import KlickKit
+import AppearanceKit
 
 /// What the window shows while it plays: the tempo (or the count-in), the beats and the notation, and for a tempo map the
 /// section and the timeline. Nothing here changes a setting: the button "Configuration" and the key Escape go back to them.
 struct LivePage: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     @State private var lit: Int?
 
@@ -74,7 +76,7 @@ struct LivePage: View {
         }
         // A soft glow of the accent at the top while it plays.
         .background {
-            RadialGradient(colors: [Color.accentColor.opacity(0.22), .clear], center: .top, startRadius: 0, endRadius: 520)
+            RadialGradient(colors: [accent.opacity(0.22), .clear], center: .top, startRadius: 0, endRadius: 520)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
         }
@@ -134,6 +136,7 @@ struct LivePage: View {
 
 /// One lamp per beat, as large as the window allows; they only show.
 private struct Lamps: View {
+    @Environment(\.appAccentColor) private var accent
     let pattern: String
     let lit: Int?
 
@@ -146,10 +149,10 @@ private struct Lamps: View {
                 Text(verbatim: chars[i] == "." ? "·" : "\(i + 1)")
                     .font(.system(size: small ? 14 : 19, weight: .semibold))
                     .frame(width: size, height: size)
-                    .background(Circle().fill(chars[i] == "." ? Color.clear : lit == i ? Color.accentColor : Color.primary.opacity(0.12)))
+                    .background(Circle().fill(chars[i] == "." ? Color.clear : lit == i ? accent : Color.primary.opacity(0.12)))
                     .overlay { if chars[i] == "." { Circle().strokeBorder(.quaternary, lineWidth: 1.5) } }
                     .foregroundStyle(lit == i ? Color.white : .secondary)
-                    .shadow(color: lit == i ? Color.accentColor.opacity(0.7) : .clear, radius: 14)
+                    .shadow(color: lit == i ? accent.opacity(0.7) : .clear, radius: 14)
                     .scaleEffect(lit == i ? 1.1 : 1)
                     .frame(minWidth: 50, minHeight: 72)
             }
@@ -162,6 +165,7 @@ private struct Lamps: View {
 /// The sections of the map side by side, as wide as their number of bars: the ones played are filled, the one playing fills as
 /// the bars go by, and the next one is named.
 private struct Timeline: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -178,7 +182,7 @@ private struct Timeline: View {
                         let fraction = fill(of: i)
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 5).fill(Color.primary.opacity(s.muted ? 0.05 : 0.12))
-                            RoundedRectangle(cornerRadius: 5).fill(Color.accentColor.opacity(i == player.sectionIndex ? 1 : 0.55))
+                            RoundedRectangle(cornerRadius: 5).fill(accent.opacity(i == player.sectionIndex ? 1 : 0.55))
                                 .frame(width: max(0, unit * CGFloat(s.bars) * fraction))
                         }
                         .frame(width: max(4, unit * CGFloat(s.bars)))
@@ -218,6 +222,7 @@ private struct Timeline: View {
 
 /// The name of the map (its file, or "Sans titre" until it is saved), as a button that opens the map in its editor while it plays on.
 private struct MapNameButton: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     @State private var hovered = false
 
@@ -227,7 +232,7 @@ private struct MapNameButton: View {
         HStack(spacing: 6) {
             Button { model.show(.map) } label: {
                 Label(name, systemImage: "doc.text")
-                    .foregroundStyle(hovered ? Color.accentColor : .primary)
+                    .foregroundStyle(hovered ? accent : .primary)
                     .underline(hovered)
             }
             .buttonStyle(.plain)

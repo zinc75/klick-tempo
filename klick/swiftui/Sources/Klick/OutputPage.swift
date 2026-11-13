@@ -5,6 +5,7 @@ import SwiftUI
 import AppKit
 import MatrixKit
 import KlickKit
+import AppearanceKit
 
 /// The output: where the sound goes (the output of the system, for now), what it announces, and the delay of the lamps for this
 /// output, set by ear.
@@ -132,7 +133,7 @@ private struct OffsetRow: View {
 
     var body: some View {
         OutputRow(title: "Décalage pour cette sortie", detail: detail) {
-            Slider(value: Binding(get: { model.displayOffset }, set: { model.displayOffset = $0.rounded() }), in: -100...100, step: 5)
+            Slider(value: Binding(get: { model.displayOffset }, set: { model.displayOffset = $0.rounded() }), in: -100...100, step: 5).accentTint()
                 .frame(width: 180)
             Text(verbatim: model.displayOffset == 0 ? "0 ms" : String(format: "%+d ms", Int(model.displayOffset))).font(.system(.callout, design: .monospaced))
                 .frame(width: 72, alignment: .trailing)
@@ -149,14 +150,15 @@ private struct OffsetRow: View {
 
 /// A lamp that flashes with each beat heard, to set the delay by.
 private struct OffsetLamp: View {
+    @Environment(\.appAccentColor) private var accent
     @Environment(AppModel.self) private var model
     @State private var lit = false
 
     var body: some View {
         Circle()
-            .fill(lit ? Color.accentColor : Color.primary.opacity(0.14))
+            .fill(lit ? accent : Color.primary.opacity(0.14))
             .frame(width: 22, height: 22)
-            .shadow(color: lit ? Color.accentColor.opacity(0.7) : .clear, radius: 8)
+            .shadow(color: lit ? accent.opacity(0.7) : .clear, radius: 8)
             .animation(.easeOut(duration: 0.08), value: lit)
             .onChange(of: model.player.beatCount) {
                 lit = true

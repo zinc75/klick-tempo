@@ -2,43 +2,19 @@
 // Licence of the program this interface drives (klick).
 
 import SwiftUI
+import AppearanceKit
 
-/// The look of the application: dark for everybody, whatever the system says (it is how the Jack apps and JackMate look), and
-/// light only by a click on the sun in the toolbar. Kept between two launches and applied to every window, the matrix included.
-/// (The same in every application of the collection; to move to shared/ when a third application needs it.)
-enum AppearanceChoice: String, CaseIterable {
-    case light, dark
-
-    static let key = "appearance"
-
-    static var saved: AppearanceChoice {
-        UserDefaults.standard.string(forKey: key).flatMap(AppearanceChoice.init(rawValue:)) ?? .dark
-    }
-
-    var nsAppearance: NSAppearance? {
-        switch self {
-        case .light: return NSAppearance(named: .aqua)
-        case .dark: return NSAppearance(named: .darkAqua)
-        }
-    }
-
-    func apply() { NSApp.appearance = nsAppearance }
-}
-
-/// A sun or a moon in the toolbar: it shows the look a click goes to.
+/// A sun or a moon in the toolbar of the live view: it shows the look a click goes to. The choice itself, with the accent,
+/// is in the settings window (the same for every application of the collection, see AppearanceKit).
 struct AppearanceButton: View {
     /// On macOS 26 the button draws the glass disc itself, as it is kept out of the capsule of its neighbours.
     var ownGlass = false
-    @AppStorage(AppearanceChoice.key) private var stored = AppearanceChoice.dark.rawValue
+    @Environment(AppearanceSettings.self) private var appearance
     @Environment(\.colorScheme) private var scheme
-
-    private var choice: Binding<AppearanceChoice> {
-        Binding(get: { AppearanceChoice(rawValue: stored) ?? .dark }, set: { stored = $0.rawValue })
-    }
 
     var body: some View {
         Button {
-            choice.wrappedValue = scheme == .dark ? .light : .dark
+            appearance.mode = appearance.toggled(currentlyDark: scheme == .dark)
         } label: {
             Image(systemName: scheme == .dark ? "sun.max" : "moon")
                 .frame(width: ownGlass ? 30 : nil, height: ownGlass ? 30 : nil)
@@ -47,7 +23,6 @@ struct AppearanceButton: View {
         .buttonStyle(.plain)
         .help(LocalizedStringKey(scheme == .dark ? "Passer en mode clair" : "Passer en mode sombre"))
         .accessibilityLabel("Clair ou sombre")
-        .onChange(of: stored) { choice.wrappedValue.apply() }
     }
 }
 

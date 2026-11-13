@@ -4,6 +4,7 @@
 import SwiftUI
 import MatrixKit
 import KlickKit
+import AppearanceKit
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
@@ -114,6 +115,7 @@ struct PageView: View {
         case .sounds: SoundsPage()
         case .output: OutputPage()
         case .export: ExportPage()
+        case .appearance: AppearancePage()
         }
     }
 }
@@ -134,34 +136,36 @@ struct PagePlaceholder: View {
     }
 }
 
-/// Toolbar items: the state of the output and the look of the application, each on its own capsule.
+/// Toolbar items: the silent mode, the state of the output, the way to the live view; there, the quick change of look.
 struct MainToolbar: ToolbarContent {
     @Environment(AppModel.self) private var model
 
     var body: some ToolbarContent {
-        // The silent mode first, so that it is at hand from every page; then the output; then the look. On macOS 26
-        // neighbouring items share one glass capsule: the two buttons leave it and take a capsule of their own.
+        // The silent mode first, so that it is at hand from every page; then the output. On macOS 26 neighbouring
+        // items share one glass capsule: the buttons leave it and take a capsule of their own.
         if #available(macOS 26, *) {
             ToolbarItem(placement: .primaryAction) { QuietButton(ownGlass: true) }
                 .sharedBackgroundVisibility(.hidden)
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) { StatusPill() }
             ToolbarSpacer(.fixed, placement: .primaryAction)
-            // While it plays and the settings are in view: the way to the live view, by the look button.
+            // While it plays and the settings are in view: the way to the live view. In the live view: the quick way to the other
+            // look (the choice itself is in the settings window, \u2318,).
             if model.isPlaying && !model.showsLiveView {
                 ToolbarItem(placement: .primaryAction) { LiveViewButton(ownGlass: true) }
                     .sharedBackgroundVisibility(.hidden)
-                ToolbarSpacer(.fixed, placement: .primaryAction)
             }
-            ToolbarItem(placement: .primaryAction) { AppearanceButton(ownGlass: true) }
-                .sharedBackgroundVisibility(.hidden)
+            if model.showsLiveView {
+                ToolbarItem(placement: .primaryAction) { AppearanceButton(ownGlass: true) }
+                    .sharedBackgroundVisibility(.hidden)
+            }
         } else {
             ToolbarItem(placement: .primaryAction) { QuietButton() }
             ToolbarItem(placement: .primaryAction) { StatusPill() }
             if model.isPlaying && !model.showsLiveView {
                 ToolbarItem(placement: .primaryAction) { LiveViewButton() }
             }
-            ToolbarItem(placement: .primaryAction) { AppearanceButton() }
+            if model.showsLiveView { ToolbarItem(placement: .primaryAction) { AppearanceButton() } }
         }
     }
 }
@@ -188,6 +192,7 @@ struct LiveViewButton: View {
 /// The silent mode: no click is heard, the lamps and the count-in are only seen. In the toolbar, so that it is reachable from
 /// every page.
 struct QuietButton: View {
+    @Environment(\.appAccentColor) private var accent
     /// On macOS 26 the button draws the glass disc itself, as it is kept out of the capsule of its neighbours.
     var ownGlass = false
     @Environment(AppModel.self) private var model
@@ -197,7 +202,7 @@ struct QuietButton: View {
             model.settings.isQuiet.toggle()
         } label: {
             Image(systemName: model.settings.isQuiet ? "speaker.slash.fill" : "speaker.wave.2")
-                .foregroundStyle(model.settings.isQuiet ? Color.accentColor : .secondary)
+                .foregroundStyle(model.settings.isQuiet ? accent : .secondary)
                 .frame(width: ownGlass ? 30 : nil, height: ownGlass ? 30 : nil)
                 .modifier(OwnGlass(enabled: ownGlass))
         }
@@ -292,10 +297,11 @@ private struct OutputChoice: View {
     }
 
     private struct RowStyle: ButtonStyle {
+        @Environment(\.appAccentColor) private var accent
         @State private var hovered = false
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
-                .background(RoundedRectangle(cornerRadius: 6).fill(configuration.isPressed ? Color.accentColor.opacity(0.3) : hovered ? Color.primary.opacity(0.1) : .clear))
+                .background(RoundedRectangle(cornerRadius: 6).fill(configuration.isPressed ? accent.opacity(0.3) : hovered ? Color.primary.opacity(0.1) : .clear))
                 .onHover { hovered = $0 }
         }
     }
