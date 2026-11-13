@@ -79,6 +79,7 @@ struct KlickEngine
     std::atomic<int> mode;                  // 0 stopped, KLICK_MODE_*
     std::atomic<unsigned> callbacks;
     std::uint64_t frames;                   // audio thread only: frames rendered before the current block
+    std::atomic<std::uint64_t> position;    // the same, after each block, for the control thread
 
     std::vector<KlickBeat> ring;
     std::atomic<std::uint64_t> head, tail, lost;
@@ -86,7 +87,7 @@ struct KlickEngine
     KlickEngine()
       : audio(NULL), multiplier(1.0f), pending(), pending_flag(false),
         countin_bars(0), countin_beats_per_bar(4), countin_volume(0.0f), joined(false), countin_total(0), countin_index(0),
-        countin_active(false), countin_frames_left(0), mode(0), callbacks(0), frames(0),
+        countin_active(false), countin_frames_left(0), mode(0), callbacks(0), frames(0), position(0),
         ring(RING_SIZE), head(0), tail(0), lost(0)
     {
         pending.tempo = 120.0f; pending.beats = 4; pending.denom = 4;
@@ -149,6 +150,7 @@ struct KlickEngine
           default: break;
         }
         frames += nframes;
+        position.store(frames, std::memory_order_release);
         callbacks.fetch_add(1, std::memory_order_release);
     }
 
@@ -398,6 +400,12 @@ int klick_engine_is_playing(KlickEngine const * e)
       default:                return 0;
     }
 }
+
+
+uint64_t klick_engine_position(KlickEngine const * e) { return e->position.load(std::memory_order_acquire); }
+
+
+uint32_t klick_engine_output_latency(KlickEngine const * e) { return e->coreaudio ? e->coreaudio->output_latency_frames() : 0; }
 
 
 size_t klick_engine_poll_beats(KlickEngine * e, KlickBeat * out, size_t max)

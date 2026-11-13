@@ -90,6 +90,34 @@ AudioInterfaceCoreAudio::~AudioInterfaceCoreAudio()
 }
 
 
+nframes_t AudioInterfaceCoreAudio::output_latency_frames() const
+{
+    AudioObjectPropertyAddress system = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+    AudioDeviceID device = kAudioObjectUnknown;
+    UInt32 size = sizeof(device);
+    if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &system, 0, NULL, &size, &device) != noErr || device == kAudioObjectUnknown) return 0;
+
+    auto u32 = [&](AudioObjectID object, AudioObjectPropertySelector selector, AudioObjectPropertyScope scope) -> UInt32 {
+        AudioObjectPropertyAddress a = { selector, scope, kAudioObjectPropertyElementMain };
+        UInt32 v = 0, n = sizeof(v);
+        return AudioObjectGetPropertyData(object, &a, 0, NULL, &n, &v) == noErr ? v : 0;
+    };
+    UInt32 frames = u32(device, kAudioDevicePropertyLatency, kAudioDevicePropertyScopeOutput)
+                  + u32(device, kAudioDevicePropertySafetyOffset, kAudioDevicePropertyScopeOutput)
+                  + u32(device, kAudioDevicePropertyBufferFrameSize, kAudioObjectPropertyScopeGlobal);
+    AudioObjectPropertyAddress streams = { kAudioDevicePropertyStreams, kAudioDevicePropertyScopeOutput, kAudioObjectPropertyElementMain };
+    AudioStreamID stream = kAudioObjectUnknown;
+    size = sizeof(stream);
+    if (AudioObjectGetPropertyData(device, &streams, 0, NULL, &size, &stream) == noErr && stream != kAudioObjectUnknown) {
+        frames += u32(stream, kAudioStreamPropertyLatency, kAudioObjectPropertyScopeGlobal);
+    }
+    Float64 rate = 0; size = sizeof(rate);
+    AudioObjectPropertyAddress nominal = { kAudioDevicePropertyNominalSampleRate, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+    if (AudioObjectGetPropertyData(device, &nominal, 0, NULL, &size, &rate) != noErr || rate <= 0) return frames;
+    return static_cast<nframes_t>(frames * static_cast<double>(_samplerate) / rate);   // from the rate of the device to that of the engine
+}
+
+
 void AudioInterfaceCoreAudio::start()
 {
     if (!_running) {

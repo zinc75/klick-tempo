@@ -96,6 +96,13 @@ void klick_engine_stop(KlickEngine *);
 /* 1 while something plays; a tempo map that has reached its end is no longer playing. */
 int klick_engine_is_playing(const KlickEngine *);
 
+/* Frames handed to the output so far (the same scale as KlickBeat.frame). A beat is heard when this, minus the latency of
+ * the output, reaches its frame. */
+uint64_t klick_engine_position(const KlickEngine *);
+/* Frames between a block being handed to the output and being heard; asks the system (do not call it every frame of the
+ * display). 0 for offline engines. */
+uint32_t klick_engine_output_latency(const KlickEngine *);
+
 /* Copies up to 'max' beats, oldest first, and returns how many. */
 size_t klick_engine_poll_beats(KlickEngine *, KlickBeat *out, size_t max);
 /* Beats lost because nobody polled fast enough. */

@@ -39,6 +39,10 @@ class AudioInterfaceCoreAudio
     // Largest block the device may ask for; the real-time callback never allocates.
     nframes_t max_block() const { return static_cast<nframes_t>(_buffer.size()); }
 
+    // Frames, at the rate of the engine, between the moment a block is handed to CoreAudio and the moment it is heard:
+    // latency of the device and of its stream, safety offset and buffer. Asks the system, so not for the audio thread.
+    nframes_t output_latency_frames() const;
+
     // Delivery diagnostics, filled by the audio thread since the last start(): jumps of the device sample clock
     // between two blocks (a dropout), and the largest gap between the host time of a block and the expected one.
     unsigned discontinuities() const { return _gaps.load(); }

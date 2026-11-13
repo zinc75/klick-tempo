@@ -162,6 +162,13 @@ public final class Engine: @unchecked Sendable {
     /// True while something plays; a tempo map that has reached its end is no longer playing.
     public var isPlaying: Bool { klick_engine_is_playing(handle) != 0 }
 
+    /// Frames handed to the output so far, on the scale of `Beat.frame`.
+    public var position: UInt64 { klick_engine_position(handle) }
+
+    /// Frames between a block being handed to the output and being heard (0 for an offline engine). Asks the system: read it
+    /// now and then, not on every display frame.
+    public var outputLatency: Int { Int(klick_engine_output_latency(handle)) }
+
     /// The beats scheduled since the last call, oldest first.
     public func pollBeats() -> [Beat] {
         var raw = [KlickBeat](repeating: KlickBeat(), count: 256)
