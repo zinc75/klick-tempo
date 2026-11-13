@@ -23,41 +23,25 @@ struct OutputPage: View {
 
                 GroupTitle("Moteur audio")
                 Group {
-                    OutputRow(title: "État", detail: Text("CoreAudio : Klick joue sur la sortie choisie ci-dessous.")) {
-                        Text(verbatim: "CoreAudio").foregroundStyle(.secondary)
+                    if model.backends.count > 1 {
+                        OutputRow(title: "Moteur", detail: backendDetail) {
+                            Picker("Moteur", selection: Binding(get: { model.backend.id }, set: { model.switchBackend(to: $0) })) {
+                                ForEach(model.backends, id: \.id) { backend in
+                                    Text(verbatim: backend.name).tag(backend.id).disabled(backend.availability != .available)
+                                }
+                            }
+                            .labelsHidden()
+                            .fixedSize()
+                        }
+                    } else {
+                        OutputRow(title: "État", detail: interface.stateDetail()) {
+                            Text(verbatim: model.backend.name).foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .groupBox()
 
-                GroupTitle("CoreAudio")
-                VStack(spacing: 0) {
-                    OutputRow(title: "Sortie", detail: outputDetail) {
-                        Picker("Sortie", selection: Binding(get: { model.settings.outputDeviceUID }, set: { model.chooseOutput(uid: $0) })) {
-                            Text("Suivre le système").tag(String?.none)
-                            Divider()
-                            ForEach(model.outputDevices) { device in Text(verbatim: device.name).tag(Optional(device.uid)) }
-                            if let uid = model.settings.outputDeviceUID, !model.outputDevices.contains(where: { $0.uid == uid }) {
-                                Text("Sortie absente").tag(Optional(uid))
-                            }
-                        }
-                        .labelsHidden()
-                        .fixedSize()
-                        Button("Réglages du son…") { openSoundSettings() }.controlSize(.small)
-                    }
-                    Divider()
-                    OutputRow(title: "Fréquence d'échantillonnage", detail: Text("Klick joue à \(model.player.sampleRate / 1000, format: .number.precision(.fractionLength(0...1))) kHz et CoreAudio convertit.")) {
-                        Text(verbatim: kHz(model.output.sampleRate))
-                    }
-                    Divider()
-                    OutputRow(title: "Latence annoncée", detail: Text("Ce que la sortie dit : les lampes en tiennent compte.")) {
-                        Text(verbatim: milliseconds(model.output.latencyMilliseconds))
-                    }
-                    Divider()
-                    OutputRow(title: "Tampon", detail: Text("Plus petit : moins de retard, plus de risques de craquements. Klick prend celui que la sortie utilise.")) {
-                        Text("\(model.output.bufferFrames) échantillons")
-                    }
-                }
-                .groupBox()
+                interface.outputSections(model: model)
 
                 GroupTitle("Lampes")
                 VStack(spacing: 0) {
@@ -79,36 +63,30 @@ struct OutputPage: View {
         .onAppear { model.refreshOutput() }
     }
 
-    private var outputDetail: Text {
-        if model.isChosenOutputMissing { return Text("La sortie choisie n'est pas branchée : Klick joue sur la sortie du système.") }
-        return model.settings.outputDeviceUID == nil
-            ? Text("Klick suit la sortie du système : \(model.output.name).")
-            : Text("Jouer ici ne change pas la sortie du système.")
-    }
+    private var interface: BackendInterface { BackendRegistry.interface(for: model.backend.id) }
 
-    private func kHz(_ rate: Double) -> String {
-        rate > 0 ? (rate / 1000).formatted(.number.precision(.fractionLength(0...1))) + " kHz" : "—"
-    }
-
-    private func milliseconds(_ value: Double) -> String { "\(Int(value.rounded())) ms" }
-
-    private func openSoundSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.Sound-Settings.extension") { NSWorkspace.shared.open(url) }
+    /// Under the choice of the backend: why one of them cannot be used, else what a change does.
+    private var backendDetail: Text {
+        let reasons = model.backends.compactMap { backend -> String? in
+            if case .unavailable(let reason) = backend.availability { return "\(backend.name) : \(reason)" }
+            return nil
+        }
+        return reasons.isEmpty ? Text("Changer de moteur arrête la lecture.") : Text(verbatim: reasons.joined(separator: "\n"))
     }
 }
 
-private struct GroupTitle: View {
+struct GroupTitle: View {
     let text: LocalizedStringKey
     init(_ text: LocalizedStringKey) { self.text = text }
     var body: some View { Text(text).font(.headline).padding(.top, 6) }
 }
 
-private extension View {
+extension View {
     func groupBox() -> some View { self.padding(.horizontal, 14).blockBackground() }
 }
 
 /// A row of a group: title, optional detail, controls at the right.
-private struct OutputRow<Controls: View>: View {
+struct OutputRow<Controls: View>: View {
     let title: LocalizedStringKey
     var detail: Text?
     @ViewBuilder let controls: Controls

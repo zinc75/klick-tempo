@@ -48,15 +48,31 @@ public final class AppModel {
 
     private let store: SettingsStore?
 
-    /// `store` is where the settings are kept (`nil` to keep nothing).
-    public init(player: Player, store: SettingsStore?) {
+    /// The backends the application offers (CoreAudio; JACK too in the version that has it); the first is the default.
+    public let backends: [AudioBackend]
+    /// The one the engine plays on.
+    public private(set) var backend: AudioBackend
+
+    /// `store` is where the settings are kept (`nil` to keep nothing). `backends` are the outputs on offer (CoreAudio alone when `nil`), the first one by default;
+    /// the one that was chosen last time is taken again when it is on offer and the engine of `player` is not on it.
+    public init(player: Player, store: SettingsStore?, backends offered: [AudioBackend]? = nil) {
+        let backends = offered ?? [CoreAudioBackend()]
+        precondition(!backends.isEmpty, "an application needs a backend")
         self.player = player
         self.store = store
+        self.backends = backends
+        self.backend = backends[0]
         self.document = TempoMapDocument(sections: [MapSection(label: "intro", bars: 8, tempo: 120)])
         if let data = store?.load(), let saved = try? JSONDecoder().decode(ClickSettings.self, from: data) {
             settings = saved
         }
         selectedSection = 0
+        // The backend of the player when it is one of those on offer (an application starts on CoreAudio, then moves to the one it
+        // kept); else the one that was kept, else the first.
+        if let current = backends.first(where: { $0.id == player.backendID }) { backend = current }
+        if let kept = settings.backendID, let wanted = backends.first(where: { $0.id == kept }), wanted.id != backend.id {
+            switchBackend(to: wanted.id)
+        }
     }
 
     // MARK: pages and modes
@@ -213,50 +229,50 @@ public final class AppModel {
         didSet { player.displayOffsetMilliseconds = settings.displayOffsets[outputName] ?? 0 }
     }
 
-    /// The output device in use, read again by `refreshOutput`.
+    /// What the output in use says about itself, read again by `refreshOutput`.
     public private(set) var output = OutputInfo()
-    /// The output devices the user can choose, read again by `refreshOutput`.
-    public private(set) var outputDevices: [OutputDevice] = []
-    /// The output chosen in the application is not there (unplugged): the output of the system plays meanwhile.
-    public private(set) var isChosenOutputMissing = false
-    private var followsSystemOutput = true
 
-    /// Chooses an output device by its identifier, or, with `nil`, the output of the system.
+    /// The output devices the user can choose (CoreAudio), read again by `refreshOutput`; empty on another backend.
+    public var outputDevices: [OutputDevice] { (backend as? CoreAudioBackend)?.devices ?? [] }
+    /// The output chosen in the application is not there (unplugged): the output of the system plays meanwhile (CoreAudio).
+    public var isChosenOutputMissing: Bool { (backend as? CoreAudioBackend)?.isChosenOutputMissing ?? false }
+
+    /// Chooses an output device by its identifier, or, with `nil`, the output of the system (CoreAudio).
     public func chooseOutput(uid: String?) {
         settings.outputDeviceUID = uid
         refreshOutput()
     }
 
-    /// Puts the engine on the output that is wanted (the one chosen in the application when it is there, else the one of the
-    /// system, followed), and reads what plays: its name is the key of the display offset. Called now and then.
+    /// Asks the backend to put the engine on the output that is wanted, and reads what plays: its name is the key of the display
+    /// offset. Called now and then.
     public func refreshOutput() {
-        outputDevices = OutputDevice.all()
-        var wanted: UInt32 = 0
-        isChosenOutputMissing = false
-        if let uid = settings.outputDeviceUID {
-            if let device = outputDevices.first(where: { $0.uid == uid }) { wanted = device.id } else { isChosenOutputMissing = true }
-        }
-        do {
-            if wanted != 0 {
-                if player.outputDevice != wanted || followsSystemOutput { try player.setOutputDevice(wanted) }
-                followsSystemOutput = false
-            } else if !followsSystemOutput {
-                try player.setOutputDevice(0)
-                followsSystemOutput = true
-            } else {
-                try player.followSystemOutput()
-            }
-        } catch {
-            // The device chosen cannot be used: the system's plays, and the choice is dropped.
-            errorMessage = error.localizedDescription
-            settings.outputDeviceUID = nil
-            try? player.setOutputDevice(0)
-            followsSystemOutput = true
-        }
-        let playing = player.outputDevice
-        guard let info = OutputInfo.current(device: playing == 0 ? nil : playing), info != output else { return }
+        guard let info = backend.refresh(player: player, host: self), info != output else { return }
         output = info
-        outputName = info.name
+        outputName = backend.displayOffsetKey(for: info)
+    }
+
+    /// Plays on another backend: what plays stops, the engine is made again on the new backend and the settings reach it. The
+    /// choice is kept. A backend that cannot be used (or whose engine cannot be made) leaves things as they are, with the reason
+    /// shown.
+    public func switchBackend(to id: String) {
+        guard let new = backends.first(where: { $0.id == id }), new.id != backend.id || player.backendID != new.id else { return }
+        if case .unavailable(let reason) = new.availability {
+            errorMessage = reason
+            return
+        }
+        stop()
+        do {
+            let engine = try new.makeEngine()
+            player.replaceEngine(engine)
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+        backend = new
+        settings.backendID = new.id
+        output = OutputInfo()
+        errorMessage = nil
+        refreshOutput()
     }
 
     /// The delay of the display for the output in use, in milliseconds (0 when none was set).
@@ -352,3 +368,5 @@ public final class AppModel {
         if let selected = selectedSection, selected >= document.sections.count { selectedSection = document.sections.indices.last }
     }
 }
+
+extension AppModel: BackendHost {}

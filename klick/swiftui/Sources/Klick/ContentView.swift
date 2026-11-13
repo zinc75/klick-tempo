@@ -206,8 +206,8 @@ struct QuietButton: View {
     }
 }
 
-/// The audio engine in use, with its light (green when it works, red when it does not). A click opens a list to choose the output,
-/// from any page and from the live view; the page "Sortie" has the rest. With JACK the pill will say JACK.
+/// The audio backend in use (CoreAudio, JACK), with its light (green when it works, red when it does not). A click opens a menu to
+/// choose the backend, when there are several, and the output; the page "Sortie" has the rest.
 struct StatusPill: View {
     @Environment(AppModel.self) private var model
     @State private var isOpen = false
@@ -216,62 +216,60 @@ struct StatusPill: View {
         // The rate of the engine (the one that was always shown); the device may run at another, CoreAudio converting.
         let kHz = (Double(model.player.sampleRate) / 1000).formatted(.number.precision(.fractionLength(0...1)))
         let deviceKHz = (model.output.sampleRate / 1000).formatted(.number.precision(.fractionLength(0...1)))
+        let healthy = model.errorMessage == nil && !model.isChosenOutputMissing && !model.player.isBackendShutdown
         Button { isOpen.toggle() } label: {
             HStack(spacing: 6) {
-                Circle().fill(model.errorMessage == nil && !model.isChosenOutputMissing ? Color.green : Color.red).frame(width: 8, height: 8)
-                Text(verbatim: "CoreAudio · \(kHz) kHz").font(.caption).fontWeight(.medium)
+                Circle().fill(healthy ? Color.green : Color.red).frame(width: 8, height: 8)
+                Text(verbatim: "\(model.backend.name) · \(kHz) kHz").font(.caption).fontWeight(.medium)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $isOpen, arrowEdge: .bottom) { OutputChoice(close: { isOpen = false }) }
+        .popover(isPresented: $isOpen, arrowEdge: .bottom) { PillMenu(close: { isOpen = false }) }
         .help("\(model.output.name) · \(deviceKHz) kHz : choisir la sortie")
         .accessibilityLabel("Sortie audio")
     }
 }
 
-/// The outputs to choose from: the system's, followed, or one of the devices.
-private struct OutputChoice: View {
+/// What the pill opens: the backends to choose from when there are several, then what the backend in use offers.
+private struct PillMenu: View {
     let close: () -> Void
     @Environment(AppModel.self) private var model
 
-    private var rate: String {
-        (model.output.sampleRate / 1000).formatted(.number.precision(.fractionLength(0...1))) + " kHz"
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Sortie").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 10).padding(.bottom, 4)
-            row(Text("Suivre le système"), detail: model.settings.outputDeviceUID == nil ? model.output.name : nil, selected: model.settings.outputDeviceUID == nil) {
-                model.chooseOutput(uid: nil)
-            }
-            ForEach(model.outputDevices) { device in
-                row(Text(verbatim: device.name), detail: nil, selected: model.settings.outputDeviceUID == device.uid) {
-                    model.chooseOutput(uid: device.uid)
+            if model.backends.count > 1 {
+                Text("Moteur audio").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 10).padding(.bottom, 4)
+                ForEach(model.backends, id: \.id) { backend in
+                    PillRow(title: Text(verbatim: backend.name), detail: unavailableReason(backend), selected: model.backend.id == backend.id, close: close) {
+                        model.switchBackend(to: backend.id)
+                    }
                 }
+                Divider().padding(.vertical, 4)
             }
-            if model.isChosenOutputMissing {
-                Label("La sortie choisie n'est pas branchée.", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption).foregroundStyle(Color.alert).padding(.horizontal, 10).padding(.vertical, 4)
-            }
-            Divider().padding(.vertical, 4)
-            // What plays now: the output, the rate of the device (the engine works at its own rate, CoreAudio converts) and the
-            // latency it announces.
-            VStack(alignment: .leading, spacing: 1) {
-                Text(verbatim: model.output.name).font(.caption).fontWeight(.medium)
-                Text(verbatim: "CoreAudio · \(rate) · \(Int(model.output.latencyMilliseconds.rounded())) ms")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 10).padding(.bottom, 4)
-            row(Text("Réglages de la sortie…"), detail: nil, selected: nil) { model.show(.output) }
+            BackendRegistry.interface(for: model.backend.id).pillMenu(model: model, close: close)
         }
         .padding(8)
         .frame(width: 300)
     }
 
-    private func row(_ title: Text, detail: String?, selected: Bool?, action: @escaping () -> Void) -> some View {
+    private func unavailableReason(_ backend: AudioBackend) -> String? {
+        if case .unavailable(let reason) = backend.availability { return reason }
+        return nil
+    }
+}
+
+/// A row of the menu of the pill: a check mark when it is the choice, a title, a line under it.
+struct PillRow: View {
+    let title: Text
+    var detail: String?
+    var selected: Bool?
+    let close: () -> Void
+    let action: () -> Void
+
+    var body: some View {
         Button {
             action()
             close()

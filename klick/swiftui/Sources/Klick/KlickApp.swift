@@ -91,7 +91,13 @@ struct KlickApp: App {
         let player = Player(engine: engine, soundsDirectory: Self.soundsDirectory)
         // At the very first launch the map is an example, so that the page is not empty.
         let firstLaunch = Self.keepsSettings && UserDefaultsStore().load() == nil
-        let model = AppModel(player: player, store: Self.keepsSettings ? UserDefaultsStore() : nil)
+        // The backends on offer: CoreAudio. A development run can add an offline one to try the choice of the backend
+        // (KLICK_TEST_BACKENDS=1): it makes no sound.
+        var backends: [AudioBackend] = [CoreAudioBackend()]
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["KLICK_TEST_BACKENDS"] != nil { backends.append(OfflineBackend()) }
+        #endif
+        let model = AppModel(player: player, store: Self.keepsSettings ? UserDefaultsStore() : nil, backends: backends)
         if firstLaunch, let first = ExampleMap.all.first { try? model.openExample(first, in: Self.examplesDirectory) }
         model.errorMessage = failure
         #if DEBUG

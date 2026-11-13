@@ -42,7 +42,7 @@ public final class Player {
         return total > 0 ? min(1, mapPosition / total) : 0
     }
 
-    private let engine: Engine
+    private var engine: Engine
     private let soundsDirectory: URL
     private var map: [MapSection] = []
     /// Where the map starts: the engine plays from there on, the counting stays that of the whole map. A bar of a section.
@@ -62,6 +62,24 @@ public final class Player {
     }
 
     public var isPlaying: Bool { phase != .stopped }
+
+    /// The id of the backend the engine plays on.
+    public var backendID: String { engine.backendID }
+
+    /// The AudioInterface of the backend, for the functions of the library that provided it.
+    public var backendAudio: UnsafeMutableRawPointer? { engine.backendAudio }
+
+    /// True when the backend has stopped by itself (a JACK server that is gone).
+    public var isBackendShutdown: Bool { engine.isBackendShutdown }
+
+    /// Plays on another engine (another backend) from now on: what plays stops, the sounds are loaded again at the next start.
+    public func replaceEngine(_ new: Engine) {
+        stop()
+        engine = new
+        soundKey = nil
+        latencyFrames = 0
+        readLatency(force: true)
+    }
 
     /// Rate of the engine, in Hz.
     public var sampleRate: Int { engine.sampleRate }

@@ -1430,6 +1430,34 @@
         }
       }
     },
+    "Changer de moteur arrête la lecture.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changing the engine stops playback."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beim Wechsel der Engine stoppt die Wiedergabe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiare motore interrompe la riproduzione."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar de motor detiene la reproducción."
+          }
+        }
+      }
+    },
     "Choisissez un son d'accent et un son pour les autres temps.": {
       "localizations": {
         "en": {
@@ -3610,6 +3638,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Modificado desde el último guardado"
+          }
+        }
+      }
+    },
+    "Moteur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motor"
           }
         }
       }

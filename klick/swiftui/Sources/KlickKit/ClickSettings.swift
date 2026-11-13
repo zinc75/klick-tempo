@@ -71,8 +71,45 @@ public struct ClickSettings: Codable, Equatable, Sendable {
     public var displayOffsets: [String: Double] = [:]
     /// The output device chosen in the application, by its identifier; `nil` follows the output of the system.
     public var outputDeviceUID: String?
+    /// The backend chosen (`AudioBackend.id`); `nil` is the first one the application offers.
+    public var backendID: String?
+    /// The settings of the backends, by backend id and key: what a backend that comes from another library keeps (for JACK: the
+    /// port to connect to, the connection at start, ...). The application does not know the keys.
+    public var backendOptions: [String: [String: String]] = [:]
 
     public init() {}
+
+    /// Settings written by an older version lack the keys of what was added since: those keep their default value.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        tempo = try c.decodeIfPresent(Double.self, forKey: .tempo) ?? tempo
+        beats = try c.decodeIfPresent(Int.self, forKey: .beats) ?? beats
+        denominator = try c.decodeIfPresent(Int.self, forKey: .denominator) ?? denominator
+        pattern = try c.decodeIfPresent(String.self, forKey: .pattern) ?? pattern
+        sound = try c.decodeIfPresent(ClickSound.self, forKey: .sound) ?? sound
+        accentVolume = try c.decodeIfPresent(Double.self, forKey: .accentVolume) ?? accentVolume
+        normalVolume = try c.decodeIfPresent(Double.self, forKey: .normalVolume) ?? normalVolume
+        pitch = try c.decodeIfPresent(Double.self, forKey: .pitch) ?? pitch
+        masterVolume = try c.decodeIfPresent(Double.self, forKey: .masterVolume) ?? masterVolume
+        countIn = try c.decodeIfPresent(CountIn.self, forKey: .countIn) ?? countIn
+        isCountInAudible = try c.decodeIfPresent(Bool.self, forKey: .isCountInAudible) ?? isCountInAudible
+        isQuiet = try c.decodeIfPresent(Bool.self, forKey: .isQuiet) ?? isQuiet
+        trainer = try c.decodeIfPresent(SpeedTrainer.self, forKey: .trainer) ?? trainer
+        displayOffsets = try c.decodeIfPresent([String: Double].self, forKey: .displayOffsets) ?? displayOffsets
+        outputDeviceUID = try c.decodeIfPresent(String.self, forKey: .outputDeviceUID)
+        backendID = try c.decodeIfPresent(String.self, forKey: .backendID)
+        backendOptions = try c.decodeIfPresent([String: [String: String]].self, forKey: .backendOptions) ?? backendOptions
+    }
+
+    /// One setting of a backend; `nil` when it was never set.
+    public func option(_ key: String, backend: String) -> String? { backendOptions[backend]?[key] }
+
+    /// Sets one setting of a backend, or removes it with `nil`.
+    public mutating func setOption(_ key: String, _ value: String?, backend: String) {
+        var options = backendOptions[backend] ?? [:]
+        options[key] = value
+        backendOptions[backend] = options.isEmpty ? nil : options
+    }
 
     /// Changes the number of beats and keeps the pattern valid.
     public mutating func setBeats(_ n: Int) {
