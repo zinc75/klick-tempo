@@ -103,6 +103,16 @@ uint64_t klick_engine_position(const KlickEngine *);
  * display). 0 for offline engines. */
 uint32_t klick_engine_output_latency(const KlickEngine *);
 
+/* The output device in use (an AudioDeviceID); 0 for offline engines. */
+uint32_t klick_engine_output_device(const KlickEngine *);
+/* Plays on 'device' (an AudioDeviceID), or, for 0, on the output device of the system, which is then followed (see below).
+ * Can be called while it plays: the output is interrupted for a moment. Returns 0 and writes to 'error' if the device cannot be
+ * used; the previous one then stays. Offline engines ignore it. */
+int klick_engine_set_output_device(KlickEngine *, uint32_t device, char *error, size_t error_size);
+/* When following the system: moves to its output device if it is not the one in use. Returns 1 if the output changed, 0 if not,
+ * -1 on failure. Call it now and then from one thread (the control thread). */
+int klick_engine_follow_system_output(KlickEngine *, char *error, size_t error_size);
+
 /* Copies up to 'max' beats, oldest first, and returns how many. */
 size_t klick_engine_poll_beats(KlickEngine *, KlickBeat *out, size_t max);
 /* Beats lost because nobody polled fast enough. */

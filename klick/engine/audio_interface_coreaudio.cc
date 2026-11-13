@@ -22,8 +22,21 @@ static void check(OSStatus err, char const * what)
 }
 
 
-AudioInterfaceCoreAudio::AudioInterfaceCoreAudio(nframes_t rate)
+AudioDeviceID AudioInterfaceCoreAudio::system_output_device()
+{
+    AudioObjectPropertyAddress system = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+    AudioDeviceID device = kAudioObjectUnknown;
+    UInt32 size = sizeof(device);
+    if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &system, 0, NULL, &size, &device) != noErr) return kAudioObjectUnknown;
+    return device;
+}
+
+
+AudioInterfaceCoreAudio::AudioInterfaceCoreAudio(nframes_t rate, AudioDeviceID device)
   : _unit(NULL)
+  , _format()
+  , _follow(device == 0)
+  , _current(kAudioObjectUnknown)
   , _samplerate(0)
   , _running(false)
   , _gaps(0)
@@ -38,12 +51,21 @@ AudioInterfaceCoreAudio::AudioInterfaceCoreAudio(nframes_t rate)
 
     AudioComponentDescription desc = {};
     desc.componentType = kAudioUnitType_Output;
-    desc.componentSubType = kAudioUnitSubType_DefaultOutput;   // follows the system output device
+    desc.componentSubType = kAudioUnitSubType_HALOutput;       // plays on a device that is named (the system's, or another)
     desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
     AudioComponent comp = AudioComponentFindNext(NULL, &desc);
-    if (!comp) throw AudioError("CoreAudio: no default output unit");
+    if (!comp) throw AudioError("CoreAudio: no output unit");
     check(AudioComponentInstanceNew(comp, &_unit), "AudioComponentInstanceNew");
+
+    // Output only: the input of the unit is off (it would ask for the microphone).
+    UInt32 off = 0, on = 1;
+    check(AudioUnitSetProperty(_unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &off, sizeof(off)), "disable input");
+    check(AudioUnitSetProperty(_unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, 0, &on, sizeof(on)), "enable output");
+    AudioDeviceID target = device ? device : system_output_device();
+    if (target == kAudioObjectUnknown) throw AudioError("CoreAudio: no output device");
+    check(AudioUnitSetProperty(_unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &target, sizeof(target)), "set output device");
+    _current = target;
 
     AudioStreamBasicDescription dev = {};
     UInt32 size = sizeof(dev);
@@ -65,6 +87,7 @@ AudioInterfaceCoreAudio::AudioInterfaceCoreAudio(nframes_t rate)
         check(AudioUnitSetProperty(_unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &fmt, sizeof(fmt)), "set stream format");
     }
     _samplerate = static_cast<nframes_t>(fmt.mSampleRate);
+    _format = fmt;
 
     // Allocate once, here: the render callback must not allocate.
     UInt32 max_frames = 0;
@@ -92,10 +115,9 @@ AudioInterfaceCoreAudio::~AudioInterfaceCoreAudio()
 
 nframes_t AudioInterfaceCoreAudio::output_latency_frames() const
 {
-    AudioObjectPropertyAddress system = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
-    AudioDeviceID device = kAudioObjectUnknown;
-    UInt32 size = sizeof(device);
-    if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &system, 0, NULL, &size, &device) != noErr || device == kAudioObjectUnknown) return 0;
+    AudioDeviceID device = _current.load();
+    UInt32 size = 0;
+    if (device == kAudioObjectUnknown) return 0;
 
     auto u32 = [&](AudioObjectID object, AudioObjectPropertySelector selector, AudioObjectPropertyScope scope) -> UInt32 {
         AudioObjectPropertyAddress a = { selector, scope, kAudioObjectPropertyElementMain };
@@ -118,8 +140,56 @@ nframes_t AudioInterfaceCoreAudio::output_latency_frames() const
 }
 
 
+void AudioInterfaceCoreAudio::apply_device(AudioDeviceID device)
+{
+    bool const was_running = _running;
+    AudioDeviceID const previous = _current.load();
+    if (was_running) AudioOutputUnitStop(_unit);
+    AudioUnitUninitialize(_unit);
+
+    auto use = [&](AudioDeviceID d) {
+        check(AudioUnitSetProperty(_unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &d, sizeof(d)), "set output device");
+        check(AudioUnitSetProperty(_unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &_format, sizeof(_format)), "set stream format");
+        check(AudioUnitInitialize(_unit), "AudioUnitInitialize");
+        _current = d;
+    };
+    try {
+        use(device);
+    } catch (AudioInterface::AudioError const &) {
+        // The device cannot be used: back to the one that played.
+        try { use(previous); } catch (...) {}
+        if (was_running) AudioOutputUnitStart(_unit);
+        throw;
+    }
+    _expected_time = -1.0; _last_host = 0;     // the audio thread is stopped (or does not run yet)
+    if (was_running) check(AudioOutputUnitStart(_unit), "AudioOutputUnitStart");
+}
+
+
+void AudioInterfaceCoreAudio::set_device(AudioDeviceID device)
+{
+    std::lock_guard<std::mutex> lock(_control);
+    AudioDeviceID const target = device ? device : system_output_device();
+    if (target == kAudioObjectUnknown) throw AudioError("CoreAudio: no output device");
+    if (target != _current.load()) apply_device(target);
+    _follow = (device == 0);
+}
+
+
+bool AudioInterfaceCoreAudio::sync_with_system()
+{
+    std::lock_guard<std::mutex> lock(_control);
+    if (!_follow) return false;
+    AudioDeviceID const target = system_output_device();
+    if (target == kAudioObjectUnknown || target == _current.load()) return false;
+    apply_device(target);
+    return true;
+}
+
+
 void AudioInterfaceCoreAudio::start()
 {
+    std::lock_guard<std::mutex> lock(_control);
     if (!_running) {
         _gaps = 0; _max_dev_us = 0; _expected_time = -1.0; _last_host = 0;
         check(AudioOutputUnitStart(_unit), "AudioOutputUnitStart");
@@ -130,6 +200,7 @@ void AudioInterfaceCoreAudio::start()
 
 void AudioInterfaceCoreAudio::stop()
 {
+    std::lock_guard<std::mutex> lock(_control);
     if (_running) {
         AudioOutputUnitStop(_unit);
         _running = false;

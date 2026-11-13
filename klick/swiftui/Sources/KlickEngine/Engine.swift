@@ -169,6 +169,26 @@ public final class Engine: @unchecked Sendable {
     /// now and then, not on every display frame.
     public var outputLatency: Int { Int(klick_engine_output_latency(handle)) }
 
+    /// The output device in use (an AudioDeviceID); 0 for an offline engine.
+    public var outputDevice: UInt32 { klick_engine_output_device(handle) }
+
+    /// Plays on the device with that AudioDeviceID, or, with 0, on the output device of the system, which is then followed (see
+    /// `followSystemOutput`). Can be called while it plays: the output is interrupted for a moment. If the device cannot be used
+    /// the previous one stays.
+    public func setOutputDevice(_ device: UInt32) throws {
+        var message = [CChar](repeating: 0, count: 256)
+        if klick_engine_set_output_device(handle, device, &message, message.count) == 0 { throw EngineError(message: String(cString: message)) }
+    }
+
+    /// While following the system: moves to its output device when it has changed. Returns true when the output changed.
+    @discardableResult
+    public func followSystemOutput() throws -> Bool {
+        var message = [CChar](repeating: 0, count: 256)
+        let result = klick_engine_follow_system_output(handle, &message, message.count)
+        if result < 0 { throw EngineError(message: String(cString: message)) }
+        return result == 1
+    }
+
     /// The beats scheduled since the last call, oldest first.
     public func pollBeats() -> [Beat] {
         var raw = [KlickBeat](repeating: KlickBeat(), count: 256)

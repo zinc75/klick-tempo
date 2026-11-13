@@ -49,6 +49,8 @@ for arch in $UB_ARCHS; do
   ub_env "$arch" clang -arch "$arch" -O2 -Wall -Wextra -I"$api" "$here/engine_c_test.c" "$work/libklickengine.a" \
     -lc++ -framework AudioToolbox -framework CoreAudio -framework Accelerate -o "$out/engine_tests/engine_c_test_$arch"
   # Plays on the default output device: run it by hand and change the output of the Mac meanwhile.
+  ub_env "$arch" clang -arch "$arch" -O2 -Wall -Wextra -I"$api" "$here/engine_output_test.c" "$work/libklickengine.a" \
+    -lc++ -framework AudioToolbox -framework CoreAudio -framework CoreFoundation -framework Accelerate -o "$out/engine_tests/engine_output_test_$arch"
   ub_env "$arch" clang -arch "$arch" -O2 -Wall -Wextra -I"$api" "$here/engine_device_test.c" "$work/libklickengine.a" \
     -lc++ -framework AudioToolbox -framework CoreAudio -framework CoreFoundation -framework Accelerate -o "$out/engine_tests/engine_device_test_$arch"
 done

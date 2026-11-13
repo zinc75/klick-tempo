@@ -61,6 +61,23 @@ public final class Player {
     /// Rate of the engine, in Hz.
     public var sampleRate: Int { engine.sampleRate }
 
+    /// The output device in use (an AudioDeviceID), 0 for an offline engine.
+    public var outputDevice: UInt32 { engine.outputDevice }
+
+    /// Plays on a device, or, with 0, on the output of the system (followed). The latency is read again.
+    public func setOutputDevice(_ device: UInt32) throws {
+        try engine.setOutputDevice(device)
+        readLatency(force: true)
+    }
+
+    /// While following the system: moves to its output device when it has changed. Returns true when it did.
+    @discardableResult
+    public func followSystemOutput() throws -> Bool {
+        let changed = try engine.followSystemOutput()
+        if changed { readLatency(force: true) }
+        return changed
+    }
+
     // MARK: settings and map
 
     /// Passes the settings to the engine; can be called while it plays.
@@ -132,7 +149,9 @@ public final class Player {
         guard phase != .stopped else { return }
         pending += engine.pollBeats()
         readLatency(force: false)
-        let delay = quiet ? 0 : latencyFrames + Int(displayOffsetMilliseconds * Double(engine.sampleRate) / 1000)
+        // A lamp cannot light before the engine has scheduled its beat: the delay, the announced latency plus the offset, stays at 0
+        // or above (a negative offset can take back what the output announces, not more).
+        let delay = quiet ? 0 : max(0, latencyFrames + Int(displayOffsetMilliseconds * Double(engine.sampleRate) / 1000))
         let heardUntil = Int64(engine.position) - Int64(delay)
         while let next = pending.first, Int64(next.frame) <= heardUntil {
             pending.removeFirst()

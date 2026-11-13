@@ -408,6 +408,34 @@ uint64_t klick_engine_position(KlickEngine const * e) { return e->position.load(
 uint32_t klick_engine_output_latency(KlickEngine const * e) { return e->coreaudio ? e->coreaudio->output_latency_frames() : 0; }
 
 
+uint32_t klick_engine_output_device(KlickEngine const * e) { return e->coreaudio ? e->coreaudio->current_device() : 0; }
+
+
+int klick_engine_set_output_device(KlickEngine * e, uint32_t device, char * error, size_t error_size)
+{
+    if (!e->coreaudio) return 1;   // offline: nothing to move
+    try {
+        e->coreaudio->set_device(device);
+        return 1;
+    } catch (std::exception const & ex) {
+        set_error(error, error_size, ex.what());
+        return 0;
+    }
+}
+
+
+int klick_engine_follow_system_output(KlickEngine * e, char * error, size_t error_size)
+{
+    if (!e->coreaudio) return 0;
+    try {
+        return e->coreaudio->sync_with_system() ? 1 : 0;
+    } catch (std::exception const & ex) {
+        set_error(error, error_size, ex.what());
+        return -1;
+    }
+}
+
+
 size_t klick_engine_poll_beats(KlickEngine * e, KlickBeat * out, size_t max)
 {
     std::uint64_t t = e->tail.load(std::memory_order_relaxed);
