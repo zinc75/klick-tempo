@@ -1,0 +1,21 @@
+--- a/src/main.cc
++++ b/src/main.cc
+@@ -17,6 +17,7 @@
+ #include <fstream>
+ #include <memory>
+ #include <csignal>
++#include <cstdlib>
+ 
+ 
+ das::logstream logv(std::cout);
+@@ -35,7 +36,9 @@
+         f.close();
+         return path;
+     }
+-    return std::string(DATA_DIR"/") + path;
++    // KLICK_DATA_DIR overrides the directory compiled in (the application looks for its sounds in its bundle).
++    char const * dir = std::getenv("KLICK_DATA_DIR");
++    return std::string(dir ? dir : DATA_DIR) + "/" + path;
+ }
+ 
+ 
