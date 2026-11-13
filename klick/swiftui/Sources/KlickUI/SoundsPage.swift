@@ -134,7 +134,7 @@ private struct BuiltInRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 12) {
                     Text(soundName(sound)).fontWeight(.medium)
-                    Waveform(url: KlickApp.soundsDirectory.appendingPathComponent("\(sound.fileName)_emphasis.wav"))
+                    Waveform(url: KlickResources.soundsDirectory.appendingPathComponent("\(sound.fileName)_emphasis.wav"))
                         .frame(width: 120, height: 26)
                         .foregroundStyle(selected ? accent : .secondary)
                 }

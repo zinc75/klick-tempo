@@ -8,6 +8,7 @@ import AppearanceKit
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
+    @Environment(KlickApplication.self) private var application
     @State private var columns: NavigationSplitViewVisibility = {
         #if DEBUG
         // Development aid: KLICK_SIDEBAR=hidden starts with the sidebar folded.
@@ -46,8 +47,8 @@ struct ContentView: View {
         }
         // Plain window background: only the blocks are Liquid Glass.
         .containerBackground(Color.windowFill, for: .window)
-        .navigationTitle("Klick")
-        .navigationSubtitle("Jack Apps Collection for macOS")
+        .navigationTitle(application.configuration.title)
+        .navigationSubtitle(application.configuration.subtitle)
         .toolbar { MainToolbar() }
         // The space bar starts and stops, unless a text field has the keyboard.
         .focusable()

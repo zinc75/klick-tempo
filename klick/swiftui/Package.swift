@@ -39,15 +39,21 @@ let package = Package(
         // the equivalent command line. Unit tested.
         .target(name: "KlickKit", dependencies: ["KlickEngine"]),
         .testTarget(name: "KlickKitTests", dependencies: ["KlickKit"]),
-        // The SwiftUI application. As in JackMate, UI code is main-actor isolated by default.
-        .executableTarget(
-            name: "Klick",
+        // The window, the pages and the menus of the application, shared by the applications of the family (Klick, and the version of
+        // the collection that has JACK). As in JackMate, UI code is main-actor isolated by default.
+        .target(
+            name: "KlickUI",
             dependencies: [
                 "KlickKit", "KlickEngine",
                 .product(name: "MatrixKit", package: "MatrixKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
             ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
+        ),
+        // The application: its name, its colour and the backends it offers; nothing else.
+        .executableTarget(
+            name: "Klick",
+            dependencies: ["KlickUI", .product(name: "AppearanceKit", package: "AppearanceKit")]
         ),
     ]
 )

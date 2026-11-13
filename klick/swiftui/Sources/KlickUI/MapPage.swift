@@ -93,7 +93,7 @@ struct MapPage: View {
     }
 
     private func openExample(_ example: ExampleMap) {
-        do { try model.openExample(example, in: KlickApp.examplesDirectory); model.errorMessage = nil } catch { model.errorMessage = error.localizedDescription }
+        do { try model.openExample(example, in: KlickResources.examplesDirectory); model.errorMessage = nil } catch { model.errorMessage = error.localizedDescription }
     }
 
     private func save() {

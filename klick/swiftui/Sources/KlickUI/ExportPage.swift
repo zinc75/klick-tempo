@@ -202,7 +202,7 @@ struct ExportPage: View {
         options.includeCountIn = includeCountIn
         let job: ExportSource = source == .map ? .map(fromBar: startBar) : .metronome(bars: bars)
         run.start(source: job, settings: model.settings, map: model.document.sections, options: options,
-                  soundsDirectory: KlickApp.soundsDirectory, url: url)
+                  soundsDirectory: KlickResources.soundsDirectory, url: url)
     }
 }
 

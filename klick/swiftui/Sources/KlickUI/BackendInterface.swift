@@ -9,7 +9,7 @@ import AppearanceKit
 /// What the window shows of a backend: its lines on the page "Sortie" and the part of the menu of the pill that is its own. The
 /// backend itself (KlickKit) has no UI; a backend that comes from another library brings its interface the same way.
 @MainActor
-protocol BackendInterface {
+public protocol BackendInterface {
     var backendID: String { get }
     /// What the line "État" of the page says under its title, when there is a single backend.
     func stateDetail() -> Text?
@@ -51,14 +51,16 @@ struct PlainInterface: BackendInterface {
 // MARK: CoreAudio
 
 /// CoreAudio: the output device of the system, followed, or one that is chosen; what it announces.
-struct CoreAudioInterface: BackendInterface {
-    let backendID = "coreaudio"
+public struct CoreAudioInterface: BackendInterface {
+    public let backendID = "coreaudio"
 
-    func stateDetail() -> Text? { Text("CoreAudio : Klick joue sur la sortie choisie ci-dessous.") }
+    public init() {}
 
-    func outputSections(model: AppModel) -> AnyView { AnyView(CoreAudioSections()) }
+    public func stateDetail() -> Text? { Text("CoreAudio : Klick joue sur la sortie choisie ci-dessous.") }
 
-    func pillMenu(model: AppModel, close: @escaping () -> Void) -> AnyView { AnyView(CoreAudioPillMenu(close: close)) }
+    public func outputSections(model: AppModel) -> AnyView { AnyView(CoreAudioSections()) }
+
+    public func pillMenu(model: AppModel, close: @escaping () -> Void) -> AnyView { AnyView(CoreAudioPillMenu(close: close)) }
 }
 
 private struct CoreAudioSections: View {
