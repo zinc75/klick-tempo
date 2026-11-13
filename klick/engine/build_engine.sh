@@ -59,7 +59,7 @@ for arch in $UB_ARCHS; do
   # A backend of another library: the engine on a fake backend (no audio device needed).
   ub_env "$arch" clang++ -arch "$arch" -std=c++11 -O2 -Wall -Wextra -DNDEBUG -DENABLE_RUBBERBAND \
     -I"$api" -I"$here" -I"$src/src" -I"$jack_prefix/include" -I"$boost" "$here/engine_backend_test.cc" "$work/libklickengine.a" \
-    -lc++ -framework AudioToolbox -framework CoreAudio -framework CoreFoundation -framework Accelerate -o "$out/engine_tests/engine_backend_test_$arch"
+    -framework AudioToolbox -framework CoreAudio -framework CoreFoundation -framework Accelerate -o "$out/engine_tests/engine_backend_test_$arch"
 done
 
 lipo -create "$UB_WORK"/arm64/libklickengine.a "$UB_WORK"/x86_64/libklickengine.a -output "$out/libklickengine.a"
