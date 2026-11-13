@@ -1,0 +1,130 @@
+--- a/src/metronome.hh
++++ b/src/metronome.hh
+@@ -15,7 +15,10 @@
+ #include "audio_interface.hh"
+ #include "audio_chunk.hh"
+ #include "main.hh"
++#include "tempomap.hh"
+ 
++#include <functional>
++
+ #include <boost/noncopyable.hpp>
+ 
+ 
+@@ -32,6 +35,23 @@
+ 
+     void set_sound(AudioChunkConstPtr emphasis, AudioChunkConstPtr normal);
+ 
++    // One event per beat, silent beats included, sent from the audio thread when the beat is scheduled.
++    // The callback must be real-time safe (for instance push into a lock-free queue), and must be set before
++    // the metronome is started.
++    struct BeatEvent {
++        nframes_t offset;               // position of the beat in the current block
++        int entry;                      // tempo map entry (0 for the simple metronome)
++        int bar;                        // bar in the entry, counted from 0
++        int beat;                       // beat in the bar, counted from 0
++        int beats;                      // beats per bar
++        int denom;                      // beat unit of the meter
++        float tempo;                    // quarter notes per minute at this beat
++        TempoMap::BeatType type;
++        float volume;
++    };
++    typedef std::function<void (BeatEvent const &)> BeatCallback;
++    void set_beat_callback(BeatCallback cb) { _beat_cb = cb; }
++
+     void set_active(bool b);
+     void start() { set_active(true); }
+     void stop() { set_active(false); }
+@@ -49,11 +69,13 @@
+   protected:
+ 
+     void play_click(bool emphasis, nframes_t offset, float volume = 1.0f);
++    void notify_beat(BeatEvent const & e) { if (_beat_cb) _beat_cb(e); }
+ 
+     AudioInterface & _audio;
+ 
+     AudioChunkConstPtr _click_emphasis;
+     AudioChunkConstPtr _click_normal;
++    BeatCallback _beat_cb;
+ 
+   private:
+ 
+--- a/src/metronome_simple.hh
++++ b/src/metronome_simple.hh
+@@ -74,6 +74,7 @@
+     nframes_t _frame;
+     nframes_t _next;
+     int _beat;
++    int _bar;
+ 
+     std::deque<double> _taps;
+     nframes_t _prev;
+--- a/src/metronome_simple.cc
++++ b/src/metronome_simple.cc
+@@ -31,6 +31,7 @@
+   , _frame(0)
+   , _next(0)
+   , _beat(0)
++  , _bar(0)
+   , _tapped(false)
+ {
+     if (params) {
+@@ -100,6 +101,7 @@
+ void MetronomeSimple::do_start()
+ {
+     _beat = 0;
++    _bar = 0;
+     _next = 0;
+     _frame = 0;
+ 
+@@ -183,17 +185,22 @@
+         // offset in current period
+         nframes_t offset = _next - _frame;
+ 
++        TempoMap::BeatType type;
+         if (_pattern.size()) {
+             // play click, user-defined pattern
+             ASSERT(static_cast<int>(_pattern.size()) == std::max(1, _beats));
+-            if (_pattern[_beat] != TempoMap::BEAT_SILENT) {
+-                bool emphasis = (_pattern[_beat] == TempoMap::BEAT_EMPHASIS);
++            type = _pattern[_beat];
++            if (type != TempoMap::BEAT_SILENT) {
++                bool emphasis = (type == TempoMap::BEAT_EMPHASIS);
+                 play_click(emphasis, offset);
+             }
+         } else {
+             // play click, default pattern
+-            play_click(_beat == 0 && _beats > 0, offset);
++            bool emphasis = (_beat == 0 && _beats > 0);
++            type = emphasis ? TempoMap::BEAT_EMPHASIS : TempoMap::BEAT_NORMAL;
++            play_click(emphasis, offset);
+         }
++        notify_beat(BeatEvent{ offset, 0, _bar, _beat, _beats, _denom, _current_tempo, type, 1.0f });
+ 
+         // speed trainer
+         if (_frame && _tempo_increment) {
+@@ -212,6 +219,7 @@
+ 
+         if (++_beat >= _beats) {
+             _beat = 0;
++            ++_bar;
+         }
+     }
+ 
+--- a/src/metronome_map.cc
++++ b/src/metronome_map.cc
+@@ -117,6 +117,14 @@
+ 
+         //std::cout << tick.frame << ": " << (tick.type == TempoMap::BEAT_EMPHASIS) << std::endl;
+ 
++        if (!_pos.end()) {
++            TempoMap::Entry const & e = _pos.current_entry();
++            // tempo in quarter notes per minute, from the distance to the next beat (it includes the tempo multiplier)
++            double d = _pos.dist_to_next();
++            float tempo = d > 0.0 ? static_cast<float>(240.0 * _audio.samplerate() / (d * e.denom)) : 0.0f;
++            notify_beat(BeatEvent{ tick.frame - _frame, _pos.entry(), _pos.bar(), _pos.beat(), e.beats, e.denom, tempo, tick.type, tick.volume });
++        }
++
+         if (tick.type != TempoMap::BEAT_SILENT) {
+             // start playing the click sample
+             play_click(tick.type == TempoMap::BEAT_EMPHASIS, tick.frame - _frame, tick.volume);

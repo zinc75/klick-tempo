@@ -1,0 +1,11 @@
+--- a/src/metronome_map.cc
++++ b/src/metronome_map.cc
+@@ -91,7 +91,7 @@
+         return;
+     }
+ 
+-    AudioInterfaceJack *a = dynamic_cast<AudioInterfaceJack *>(&_audio);
++    AudioInterfaceTransport *a = dynamic_cast<AudioInterfaceTransport *>(&_audio);
+ 
+     if (_transport_enabled && a) {
+         if (!a->transport_rolling()) return;
