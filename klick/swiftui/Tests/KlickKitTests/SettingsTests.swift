@@ -50,6 +50,14 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(MeterRules.groups(beats: 8, denominator: 8), [2, 2, 2, 2])
     }
 
+    func testTempoWords() {
+        XCTAssertEqual(TempoWord.name(for: 30), "Grave")
+        XCTAssertEqual(TempoWord.name(for: 70), "Adagio")
+        XCTAssertEqual(TempoWord.name(for: 120), "Allegro")
+        XCTAssertEqual(TempoWord.name(for: 119.9), "Moderato")
+        XCTAssertEqual(TempoWord.name(for: 260), "Prestissimo")
+    }
+
     func testCountInForTheEngine() {
         XCTAssertEqual(CountIn.none.engineParameters(beatsPerBar: 4).bars, 0)
         XCTAssertEqual(CountIn.twoBeats.engineParameters(beatsPerBar: 7).beatsPerBar, 2)

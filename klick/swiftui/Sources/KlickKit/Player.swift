@@ -53,6 +53,9 @@ public final class Player {
 
     public var isPlaying: Bool { phase != .stopped }
 
+    /// Rate of the engine, in Hz.
+    public var sampleRate: Int { engine.sampleRate }
+
     // MARK: settings and map
 
     /// Passes the settings to the engine; can be called while it plays.
