@@ -83,6 +83,8 @@ struct KlickApp: App {
         if let meter = ProcessInfo.processInfo.environment["KLICK_METER"]?.split(separator: "/").compactMap({ Int($0) }), meter.count == 2 {
             model.settings.setDenominator(meter[1]); model.settings.setBeats(meter[0])
         }
+        // KLICK_MAP=/path/to/file.klick opens that tempo map.
+        if let path = ProcessInfo.processInfo.environment["KLICK_MAP"] { try? model.openMap(at: URL(fileURLWithPath: path)) }
         if let pattern = ProcessInfo.processInfo.environment["KLICK_PATTERN"], MapSection.isValid(pattern: pattern, beats: model.settings.beats) {
             model.settings.pattern = pattern
         }

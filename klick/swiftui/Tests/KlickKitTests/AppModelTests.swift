@@ -85,6 +85,42 @@ final class AppModelTests: XCTestCase {
         model.stop()
     }
 
+    func testEditingSavingAndOpeningAMap() throws {
+        let (model, _) = try makeModel()
+        XCTAssertEqual(model.document.sections.count, 1)
+        XCTAssertFalse(model.document.isModified)
+        model.updateSection(at: 0) { $0.bars = 4; $0.tempo = 90 }
+        XCTAssertTrue(model.document.isModified)
+        model.addSection(MapSection(label: "verse", bars: 8, tempo: 100, tempoEnd: 120))
+        XCTAssertEqual(model.document.sections.map(\.label), ["intro", "verse"])
+        XCTAssertEqual(model.selectedSection, 1, "the new section is selected")
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("klick-map-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appendingPathComponent("song.klick")
+        try model.saveMap(to: file)
+        XCTAssertFalse(model.document.isModified)
+        XCTAssertEqual(model.document.name, "song.klick")
+        model.newMap()
+        XCTAssertEqual(model.document.sections.count, 1)
+        try model.openMap(at: file)
+        XCTAssertEqual(model.document.sections.map(\.bars), [4, 8])
+        XCTAssertEqual(model.document.sections[1].tempoEnd, 120)
+        XCTAssertFalse(model.document.isModified)
+        model.removeSection(at: 1)
+        model.removeSection(at: 0)
+        XCTAssertEqual(model.document.sections.count, 1, "the last section stays")
+    }
+
+    func testAnUnreadableFileLeavesTheMapAlone() throws {
+        let (model, _) = try makeModel()
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("klick-bad-\(UUID().uuidString).klick")
+        try "this is not a map".write(to: file, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: file) }
+        XCTAssertThrowsError(try model.openMap(at: file))
+        XCTAssertEqual(model.document.sections.first?.label, "intro")
+    }
+
     func testAFailureIsShownNotThrown() throws {
         let engine = try Engine(offline: true, rate: 48000)
         let model = AppModel(player: Player(engine: engine, soundsDirectory: URL(fileURLWithPath: "/nonexistent")), store: nil)

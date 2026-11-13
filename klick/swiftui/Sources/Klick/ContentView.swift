@@ -18,6 +18,14 @@ struct ContentView: View {
     /// The settings: the sidebar and the page, with the footer running under both over the whole width of the window. The
     /// metronome page has its own big button.
     private var settingsView: some View {
+        // The footer is below the split view, not over it: the pages and their scroll bars end where it begins.
+        VStack(spacing: 0) {
+            splitView
+            if model.page != .metronome { FooterBar() }
+        }
+    }
+
+    private var splitView: some View {
         NavigationSplitView(columnVisibility: $columns) {
             Sidebar()
                 .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
@@ -27,9 +35,6 @@ struct ContentView: View {
                 .safeAreaInset(edge: .top, spacing: 0) {
                     if let message = model.errorMessage { ErrorBanner(message: message) { model.errorMessage = nil } }
                 }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if model.page != .metronome { FooterBar() }
         }
     }
 
@@ -98,7 +103,7 @@ struct PageView: View {
     var body: some View {
         switch model.page {
         case .metronome: MetronomePage()
-        case .map: PagePlaceholder(title: "Carte de tempo", text: "Une suite de sections jouées l'une après l'autre.")
+        case .map: MapPage()
         case .sounds: PagePlaceholder(title: "Sons", text: "Un son pour l'accent et un pour les autres temps.")
         case .output: PagePlaceholder(title: "Sortie", text: "Où va le son du métronome.")
         case .export: PagePlaceholder(title: "Exporter", text: "Une piste de clics dans un fichier audio.")

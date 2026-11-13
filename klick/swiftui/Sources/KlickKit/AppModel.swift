@@ -160,6 +160,49 @@ public final class AppModel {
         settings.tempo = Self.clamped(bpm)
     }
 
+    // MARK: tempo map document
+
+    /// Where the maps are kept unless the user chooses otherwise: `~/Documents/Klick`.
+    public static var defaultMapsDirectory: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Klick", isDirectory: true)
+    }
+
+    /// A new map: one section, as at launch.
+    public func newMap() {
+        document = TempoMapDocument(sections: [MapSection(label: "intro", bars: 8, tempo: 120)])
+        selectedSection = 0
+    }
+
+    /// Opens a file; the map in use is left alone when it cannot be read.
+    public func openMap(at url: URL) throws {
+        let opened = try TempoMapDocument(contentsOf: url)
+        guard !opened.sections.isEmpty else { throw TempoMapFile.ParseError(line: 0, text: "", message: "no section") }
+        document = opened
+        selectedSection = 0
+    }
+
+    /// Saves to the file the map comes from, or to `url`.
+    public func saveMap(to url: URL? = nil) throws {
+        try document.save(to: url)
+    }
+
+    /// Changes one section.
+    public func updateSection(at index: Int, _ change: (inout MapSection) -> Void) {
+        guard document.sections.indices.contains(index) else { return }
+        edit { change(&$0.sections[index]) }
+    }
+
+    /// Adds a section after the selected one and selects it.
+    public func addSection(_ section: MapSection) {
+        edit { selectedSection = $0.insert(section, after: selectedSection) }
+    }
+
+    /// Removes a section; the last one cannot be removed.
+    public func removeSection(at index: Int) {
+        guard document.sections.count > 1, document.sections.indices.contains(index) else { return }
+        edit { $0.sections.remove(at: index) }
+    }
+
     /// Replaces the sections of the map; applied to the player at the next start.
     public func edit(_ change: (inout TempoMapDocument) -> Void) {
         change(&document)
