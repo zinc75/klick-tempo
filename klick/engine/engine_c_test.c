@@ -117,6 +117,25 @@ int main(int argc, char **argv)
     check(n >= 2 && beats[0].section == 0 && beats[0].bar == 0 && beats[0].beat == 0, "restart from the first beat", "");
     klick_engine_stop(e);
 
+    /* one tempo per beat: a bar of 4/4 at 120, 120, 240 and 60 */
+    float tempi[4] = { 120.0f, 120.0f, 240.0f, 60.0f }, short_list[3] = { 120.0f, 120.0f, 120.0f }, out_of_range[4] = { 120.0f, 5.0f, 120.0f, 120.0f };
+    KlickSection per_beat = { "pb", 1, 4, 4, 0.0f, 0.0f, "Xxxx", 1.0f, tempi, 4 };
+    check(klick_engine_set_map(e, &per_beat, 1, 1.0f, err, sizeof err), "a map with one tempo per beat is accepted", err);
+    KlickSection wrong = per_beat; wrong.tempi = short_list; wrong.tempo_count = 3;
+    check(!klick_engine_set_map(e, &wrong, 1, 1.0f, err, sizeof err) && strstr(err, "doesn't match"), "a list of the wrong length is refused", err);
+    wrong = per_beat; wrong.tempi = out_of_range;
+    check(!klick_engine_set_map(e, &wrong, 1, 1.0f, err, sizeof err) && strstr(err, "out of range"), "a tempo out of range in the list is refused", err);
+    check(klick_engine_set_map(e, &per_beat, 1, 1.0f, err, sizeof err), "the good map again", err);
+    check(klick_engine_start(e, KLICK_MODE_MAP, err, sizeof err), "per-beat map started", err);
+    n = play(e, 3.0, beats, 1024);
+    check(n == 4, "four beats", "");
+    check(fabsf(beats[0].tempo - 120.0f) < 0.5f && fabsf(beats[2].tempo - 240.0f) < 0.5f && fabsf(beats[3].tempo - 60.0f) < 0.5f, "each beat reports its own tempo", "");
+    snprintf(detail, sizeof detail, "gaps %llu %llu %llu", (unsigned long long)(beats[1].frame - beats[0].frame), (unsigned long long)(beats[2].frame - beats[1].frame), (unsigned long long)(beats[3].frame - beats[2].frame));
+    check(beats[1].frame - beats[0].frame == 24000 && beats[2].frame - beats[1].frame == 24000 && beats[3].frame - beats[2].frame == 12000, "each beat lasts what its tempo says", detail);
+    klick_engine_stop(e);
+    play(e, 0.6, beats, 1024);
+    check(klick_engine_set_map(e, map, 3, 1.0f, err, sizeof err), "the first map again", err);
+
     /* audible count-in of one bar before the simple metronome */
     check(klick_engine_set_countin(e, 1, 4, 0.66f, err, sizeof err), "count-in set (1 bar of 4, audible)", err);
     check(!klick_engine_set_countin(e, 1, 0, 0.5f, err, sizeof err) && strstr(err, "count-in"), "an invalid count-in is refused", err);

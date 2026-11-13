@@ -294,12 +294,23 @@ int klick_engine_set_map(KlickEngine * e, KlickSection const * sections, size_t 
             std::string where = "section " + std::to_string(i + 1) + ": ";
             if (s.bars == 0 || s.bars < -1 || (s.bars == -1 && i + 1 != count)) throw std::runtime_error(where + "invalid number of bars");
             if (s.beats < 1 || s.denom < 1) throw std::runtime_error(where + "invalid meter");
-            if (!(s.tempo >= 10.0f && s.tempo <= 1000.0f) || (s.tempo_end != 0.0f && !(s.tempo_end >= 10.0f && s.tempo_end <= 1000.0f)))
-                throw std::runtime_error(where + "tempo out of range (10 to 1000)");
-            if (s.tempo_end != 0.0f && s.bars < 1) throw std::runtime_error(where + "a tempo change needs a number of bars");
+            auto in_range = [](float t) { return t >= 10.0f && t <= 1000.0f; };
             TempoMap::Entry en;
+            if (s.tempi) {   // one tempo per beat
+                if (s.bars < 1) throw std::runtime_error(where + "a list of tempos needs a number of bars");
+                if (s.tempo_count != s.bars * s.beats) throw std::runtime_error(where + "number of tempo values doesn't match number of beats");
+                for (int32_t k = 0; k < s.tempo_count; ++k) {
+                    if (!in_range(s.tempi[k])) throw std::runtime_error(where + "tempo out of range (10 to 1000)");
+                    en.tempi.push_back(s.tempi[k]);
+                }
+                en.tempo = 0.0f; en.tempo2 = 0.0f;       // klick: a tempo of zero means one tempo per beat
+            } else {
+                if (!in_range(s.tempo) || (s.tempo_end != 0.0f && !in_range(s.tempo_end))) throw std::runtime_error(where + "tempo out of range (10 to 1000)");
+                if (s.tempo_end != 0.0f && s.bars < 1) throw std::runtime_error(where + "a tempo change needs a number of bars");
+                en.tempo = s.tempo; en.tempo2 = s.tempo_end;
+            }
             en.label = s.label ? s.label : "";
-            en.bars = s.bars; en.tempo = s.tempo; en.tempo2 = s.tempo_end; en.beats = s.beats; en.denom = s.denom;
+            en.bars = s.bars; en.beats = s.beats; en.denom = s.denom;
             if (s.pattern && *s.pattern) en.pattern = TempoMap::parse_pattern(s.pattern, s.beats);
             en.volume = s.volume;
             map->add(en);
@@ -358,7 +369,7 @@ int klick_engine_start(KlickEngine * e, KlickMode mode, char * error, size_t err
             if (e->joined) {   // the count-in is the first section: same tempo, meter unit and timing as the map
                 TempoMap::Entry const & first = e->tempomap->entry(0);
                 e->countin_total = e->countin_bars * e->countin_beats_per_bar; e->countin_index = 0;
-                played = TempoMap::join(e->countin_map(first.tempo, first.denom), e->tempomap);
+                played = TempoMap::join(e->countin_map(first.tempo ? first.tempo : first.tempi[0], first.denom), e->tempomap);
             }
             e->map.reset(new MetronomeMap(*e->audio, played, e->multiplier, false, -1, ""));
             e->map->set_sound(e->accent, e->normal);

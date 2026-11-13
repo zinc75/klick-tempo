@@ -47,11 +47,13 @@ public struct Section: Equatable, Sendable {
     public var pattern: String?
     /// 1 normal, 0 silent.
     public var volume: Double
+    /// One tempo per beat of the section (`bars * beats` values); then `tempo` and `tempoEnd` are ignored.
+    public var tempi: [Double]?
 
     public init(label: String = "", bars: Int?, beats: Int = 4, denominator: Int = 4, tempo: Double, tempoEnd: Double? = nil,
-                pattern: String? = nil, volume: Double = 1) {
+                pattern: String? = nil, volume: Double = 1, tempi: [Double]? = nil) {
         self.label = label; self.bars = bars; self.beats = beats; self.denominator = denominator; self.tempo = tempo
-        self.tempoEnd = tempoEnd; self.pattern = pattern; self.volume = volume
+        self.tempoEnd = tempoEnd; self.pattern = pattern; self.volume = volume; self.tempi = tempi
     }
 }
 
@@ -115,17 +117,25 @@ public final class Engine: @unchecked Sendable {
         var message = [CChar](repeating: 0, count: 256)
         // The C strings must live until the call returns.
         var owned: [UnsafeMutablePointer<CChar>] = []
-        defer { owned.forEach { free($0) } }
+        var ownedTempi: [UnsafeMutablePointer<Float>] = []
+        defer { owned.forEach { free($0) }; ownedTempi.forEach { $0.deallocate() } }
         func cString(_ s: String?) -> UnsafePointer<CChar>? {
             guard let s else { return nil }
             let p = strdup(s)!
             owned.append(p)
             return UnsafePointer(p)
         }
+        func floats(_ values: [Double]?) -> UnsafePointer<Float>? {
+            guard let values else { return nil }
+            let p = UnsafeMutablePointer<Float>.allocate(capacity: max(values.count, 1))
+            for (i, v) in values.enumerated() { p[i] = Float(v) }
+            ownedTempi.append(p)
+            return UnsafePointer(p)
+        }
         let c = sections.map { s in
             KlickSection(label: cString(s.label), bars: Int32(s.bars ?? -1), beats: Int32(s.beats), denom: Int32(s.denominator),
                          tempo: Float(s.tempo), tempo_end: Float(s.tempoEnd ?? 0), pattern: cString(s.pattern),
-                         volume: Float(s.volume))
+                         volume: Float(s.volume), tempi: floats(s.tempi), tempo_count: Int32(s.tempi?.count ?? 0))
         }
         let ok = klick_engine_set_map(handle, c, c.count, Float(tempoMultiplier), &message, message.count)
         if ok == 0 { throw EngineError(message: String(cString: message)) }

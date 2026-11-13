@@ -129,6 +129,18 @@ final class EngineTests: XCTestCase {
         XCTAssertFalse(play(engine, seconds: 0.3).beats.contains { $0.isCountIn })
     }
 
+    func testOneTempoPerBeat() throws {
+        let engine = try makeEngine()
+        try engine.setMap([Section(bars: 1, tempo: 0, pattern: "Xxxx", tempi: [120, 120, 240, 60])])
+        try engine.start(.map)
+        let (_, beats) = play(engine, seconds: 3)
+        XCTAssertEqual(beats.map { $0.tempo.rounded() }, [120, 120, 240, 60])
+        XCTAssertEqual(zip(beats, beats.dropFirst()).map { $1.frame - $0.frame }, [24000, 24000, 12000])
+        XCTAssertThrowsError(try engine.setMap([Section(bars: 1, tempo: 0, tempi: [120, 120, 120])]))
+        XCTAssertThrowsError(try engine.setMap([Section(bars: 1, tempo: 0, tempi: [120, 5, 120, 120])]))
+        XCTAssertThrowsError(try engine.setMap([Section(bars: nil, tempo: 0, tempi: [120, 120, 120, 120])]))
+    }
+
     func testRestartBeginsAgain() throws {
         let engine = try makeEngine()
         try engine.setMap([Section(bars: 2, tempo: 120)])

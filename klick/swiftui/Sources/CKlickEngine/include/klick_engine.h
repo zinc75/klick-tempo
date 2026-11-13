@@ -56,6 +56,8 @@ typedef struct {
     float tempo_end;            /* 0 for a constant tempo, else the tempo reached at the end of the section */
     const char *pattern;        /* one character per beat: X accent, x normal, . silent; NULL for the default pattern */
     float volume;               /* 1 normal, 0 silent */
+    const float *tempi;         /* NULL, or one tempo per beat of the section (then 'tempo' and 'tempo_end' are ignored) */
+    int32_t tempo_count;        /* number of values in 'tempi': bars * beats, and the section must have a number of bars */
 } KlickSection;
 
 /* Creates an engine working at 'rate' Hz (0 for 48000). 'offline' = 0 plays on the default output device, CoreAudio
