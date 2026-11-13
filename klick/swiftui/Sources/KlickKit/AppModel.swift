@@ -185,6 +185,60 @@ public final class AppModel {
         didSet { player.displayOffsetMilliseconds = settings.displayOffsets[outputName] ?? 0 }
     }
 
+    /// The output device in use, read again by `refreshOutput`.
+    public private(set) var output = OutputInfo()
+    /// The output devices the user can choose, read again by `refreshOutput`.
+    public private(set) var outputDevices: [OutputDevice] = []
+    /// The output chosen in the application is not there (unplugged): the output of the system plays meanwhile.
+    public private(set) var isChosenOutputMissing = false
+    private var followsSystemOutput = true
+
+    /// Chooses an output device by its identifier, or, with `nil`, the output of the system.
+    public func chooseOutput(uid: String?) {
+        settings.outputDeviceUID = uid
+        refreshOutput()
+    }
+
+    /// Puts the engine on the output that is wanted (the one chosen in the application when it is there, else the one of the
+    /// system, followed), and reads what plays: its name is the key of the display offset. Called now and then.
+    public func refreshOutput() {
+        outputDevices = OutputDevice.all()
+        var wanted: UInt32 = 0
+        isChosenOutputMissing = false
+        if let uid = settings.outputDeviceUID {
+            if let device = outputDevices.first(where: { $0.uid == uid }) { wanted = device.id } else { isChosenOutputMissing = true }
+        }
+        do {
+            if wanted != 0 {
+                if player.outputDevice != wanted || followsSystemOutput { try player.setOutputDevice(wanted) }
+                followsSystemOutput = false
+            } else if !followsSystemOutput {
+                try player.setOutputDevice(0)
+                followsSystemOutput = true
+            } else {
+                try player.followSystemOutput()
+            }
+        } catch {
+            // The device chosen cannot be used: the system's plays, and the choice is dropped.
+            errorMessage = error.localizedDescription
+            settings.outputDeviceUID = nil
+            try? player.setOutputDevice(0)
+            followsSystemOutput = true
+        }
+        let playing = player.outputDevice
+        guard let info = OutputInfo.current(device: playing == 0 ? nil : playing), info != output else { return }
+        output = info
+        outputName = info.name
+    }
+
+    /// The delay of the display for the output in use, in milliseconds (0 when none was set).
+    public var displayOffset: Double {
+        get { settings.displayOffsets[outputName] ?? 0 }
+        set {
+            if newValue == 0 { settings.displayOffsets[outputName] = nil } else { settings.displayOffsets[outputName] = newValue }
+        }
+    }
+
     public func select(section index: Int?) { selectedSection = index }
 
     // MARK: tempo

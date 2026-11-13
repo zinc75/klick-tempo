@@ -73,6 +73,13 @@ struct ContentView: View {
             model.tap()
             return .handled
         }
+        .task {
+            // The user may change the output in the settings of the system: look again now and then.
+            while !Task.isCancelled {
+                model.refreshOutput()
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in model.stop() }
         #if DEBUG
         .task {
@@ -105,7 +112,7 @@ struct PageView: View {
         case .metronome: MetronomePage()
         case .map: MapPage()
         case .sounds: SoundsPage()
-        case .output: PagePlaceholder(title: "Sortie", text: "Où va le son du métronome.")
+        case .output: OutputPage()
         case .export: PagePlaceholder(title: "Exporter", text: "Une piste de clics dans un fichier audio.")
         }
     }
@@ -200,19 +207,97 @@ struct QuietButton: View {
     }
 }
 
-/// The audio output in use. CoreAudio for now; JACK comes later.
+/// The audio engine in use, with its light (green when it works, red when it does not). A click opens a list to choose the output,
+/// from any page and from the live view; the page "Sortie" has the rest. With JACK the pill will say JACK.
 struct StatusPill: View {
     @Environment(AppModel.self) private var model
+    @State private var isOpen = false
 
     var body: some View {
+        // The rate of the engine (the one that was always shown); the device may run at another, CoreAudio converting.
         let kHz = (Double(model.player.sampleRate) / 1000).formatted(.number.precision(.fractionLength(0...1)))
-        HStack(spacing: 6) {
-            Circle().fill(model.errorMessage == nil ? Color.green : Color.red).frame(width: 8, height: 8)
-            Text(verbatim: "CoreAudio · \(kHz) kHz").font(.caption).fontWeight(.medium)
+        let deviceKHz = (model.output.sampleRate / 1000).formatted(.number.precision(.fractionLength(0...1)))
+        Button { isOpen.toggle() } label: {
+            HStack(spacing: 6) {
+                Circle().fill(model.errorMessage == nil && !model.isChosenOutputMissing ? Color.green : Color.red).frame(width: 8, height: 8)
+                Text(verbatim: "CoreAudio · \(kHz) kHz").font(.caption).fontWeight(.medium)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 4)
-        .help("Sortie audio du système")
+        .buttonStyle(.plain)
+        .popover(isPresented: $isOpen, arrowEdge: .bottom) { OutputChoice(close: { isOpen = false }) }
+        .help("\(model.output.name) · \(deviceKHz) kHz : choisir la sortie")
+        .accessibilityLabel("Sortie audio")
+    }
+}
+
+/// The outputs to choose from: the system's, followed, or one of the devices.
+private struct OutputChoice: View {
+    let close: () -> Void
+    @Environment(AppModel.self) private var model
+
+    private var rate: String {
+        (model.output.sampleRate / 1000).formatted(.number.precision(.fractionLength(0...1))) + " kHz"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Sortie").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 10).padding(.bottom, 4)
+            row(Text("Suivre le système"), detail: model.settings.outputDeviceUID == nil ? model.output.name : nil, selected: model.settings.outputDeviceUID == nil) {
+                model.chooseOutput(uid: nil)
+            }
+            ForEach(model.outputDevices) { device in
+                row(Text(verbatim: device.name), detail: nil, selected: model.settings.outputDeviceUID == device.uid) {
+                    model.chooseOutput(uid: device.uid)
+                }
+            }
+            if model.isChosenOutputMissing {
+                Label("La sortie choisie n'est pas branchée.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption).foregroundStyle(Color.alert).padding(.horizontal, 10).padding(.vertical, 4)
+            }
+            Divider().padding(.vertical, 4)
+            // What plays now: the output, the rate of the device (the engine works at its own rate, CoreAudio converts) and the
+            // latency it announces.
+            VStack(alignment: .leading, spacing: 1) {
+                Text(verbatim: model.output.name).font(.caption).fontWeight(.medium)
+                Text(verbatim: "CoreAudio · \(rate) · \(Int(model.output.latencyMilliseconds.rounded())) ms")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10).padding(.bottom, 4)
+            row(Text("Réglages de la sortie…"), detail: nil, selected: nil) { model.show(.output) }
+        }
+        .padding(8)
+        .frame(width: 300)
+    }
+
+    private func row(_ title: Text, detail: String?, selected: Bool?, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            close()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark").font(.system(size: 11, weight: .semibold)).opacity(selected == true ? 1 : 0).frame(width: 14)
+                VStack(alignment: .leading, spacing: 0) {
+                    title
+                    if let detail { Text(verbatim: detail).font(.caption).foregroundStyle(.secondary) }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowStyle())
+    }
+
+    private struct RowStyle: ButtonStyle {
+        @State private var hovered = false
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .background(RoundedRectangle(cornerRadius: 6).fill(configuration.isPressed ? Color.accentColor.opacity(0.3) : hovered ? Color.primary.opacity(0.1) : .clear))
+                .onHover { hovered = $0 }
+        }
     }
 }
 

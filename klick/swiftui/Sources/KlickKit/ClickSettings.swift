@@ -69,6 +69,8 @@ public struct ClickSettings: Codable, Equatable, Sendable {
     /// Delay of the display, in milliseconds, by name of output device: some outputs (Bluetooth) delay the sound more than they
     /// say, and the lamps then wait for it. Adjusted by ear.
     public var displayOffsets: [String: Double] = [:]
+    /// The output device chosen in the application, by its identifier; `nil` follows the output of the system.
+    public var outputDeviceUID: String?
 
     public init() {}
 

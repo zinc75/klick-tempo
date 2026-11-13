@@ -136,6 +136,46 @@ final class AppModelTests: XCTestCase {
         model.stop()
     }
 
+    func testTheDisplayOffsetIsKeptPerOutput() throws {
+        let (model, _) = try makeModel()
+        model.outputName = "Speakers"
+        model.displayOffset = 0
+        XCTAssertNil(model.settings.displayOffsets["Speakers"], "an offset of 0 is not stored")
+        model.displayOffset = 180
+        XCTAssertEqual(model.player.displayOffsetMilliseconds, 180)
+        model.outputName = "Headphones"
+        XCTAssertEqual(model.displayOffset, 0, "another output has its own offset")
+        XCTAssertEqual(model.player.displayOffsetMilliseconds, 0)
+        model.outputName = "Speakers"
+        XCTAssertEqual(model.displayOffset, 180)
+        model.displayOffset = 0
+        XCTAssertNil(model.settings.displayOffsets["Speakers"])
+    }
+
+    func testAnOutputThatIsNotThereFallsBackToTheSystem() throws {
+        let (model, _) = try makeModel()
+        model.chooseOutput(uid: "klick-test-no-such-device")
+        XCTAssertTrue(model.isChosenOutputMissing)
+        XCTAssertEqual(model.settings.outputDeviceUID, "klick-test-no-such-device", "the choice is kept for when it is plugged in")
+        XCTAssertNil(model.errorMessage)
+        model.chooseOutput(uid: nil)
+        XCTAssertFalse(model.isChosenOutputMissing)
+        XCTAssertNil(model.settings.outputDeviceUID)
+    }
+
+    func testSettingsWithoutAnOutputStillLoad() throws {
+        var saved = ClickSettings()
+        saved.tempo = 100
+        saved.outputDeviceUID = "something"
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(saved)) as? [String: Any])
+        json["outputDeviceUID"] = nil   // as written before the choice of the output existed
+        let store = MemoryStore()
+        store.data = try JSONSerialization.data(withJSONObject: json)
+        let (model, _) = try makeModel(store: store)
+        XCTAssertEqual(model.settings.tempo, 100)
+        XCTAssertNil(model.settings.outputDeviceUID)
+    }
+
     func testAFailureIsShownNotThrown() throws {
         let engine = try Engine(offline: true, rate: 48000)
         let model = AppModel(player: Player(engine: engine, soundsDirectory: URL(fileURLWithPath: "/nonexistent")), store: nil)
