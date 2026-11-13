@@ -46,9 +46,18 @@ std::size_t const RING_SIZE = 2048;     // beats; a power of two
 
 struct KlickEngine
 {
-    std::unique_ptr<AudioInterfaceCoreAudio> coreaudio;
-    std::unique_ptr<AudioInterfaceOffline> offline;
-    AudioInterface * audio;
+    KlickBackend backend;       // owned from klick_engine_create_with_backend on
+    AudioInterface * audio;     // the AudioInterface of the backend
+
+    // The backends of this file are known by their id; the functions below are theirs, a no-op for any other.
+    AudioInterfaceCoreAudio * coreaudio() const
+    {
+        return backend.id && !std::strcmp(backend.id, "coreaudio") ? static_cast<AudioInterfaceCoreAudio *>(audio) : NULL;
+    }
+    AudioInterfaceOffline * offline() const
+    {
+        return backend.id && !std::strcmp(backend.id, "offline") ? static_cast<AudioInterfaceOffline *>(audio) : NULL;
+    }
 
     std::unique_ptr<MetronomeSimple> simple;
     std::unique_ptr<MetronomeMap> map;
@@ -85,13 +94,20 @@ struct KlickEngine
     std::atomic<std::uint64_t> head, tail, lost;
 
     KlickEngine()
-      : audio(NULL), multiplier(1.0f), pending(), pending_flag(false),
+      : backend(), audio(NULL), multiplier(1.0f), pending(), pending_flag(false),
         countin_bars(0), countin_beats_per_bar(4), countin_volume(0.0f), joined(false), countin_total(0), countin_index(0),
         countin_active(false), countin_frames_left(0), mode(0), callbacks(0), frames(0), position(0),
         ring(RING_SIZE), head(0), tail(0), lost(0)
     {
         pending.tempo = 120.0f; pending.beats = 4; pending.denom = 4;
         pending.t_start = pending.t_increment = pending.t_limit = 0.0f;
+    }
+
+    // The metronomes hold a reference to the audio interface: they go first, the backend last.
+    ~KlickEngine()
+    {
+        countin.reset(); map.reset(); simple.reset();
+        if (backend.audio && backend.destroy) backend.destroy(backend.audio);
     }
 
     void push_beat(Metronome::BeatEvent const & e, bool from_countin_metronome)
@@ -164,7 +180,7 @@ struct KlickEngine
     // Waits until the audio thread has gone through a few blocks without the metronome that is being stopped.
     void wait_for_audio()
     {
-        if (!coreaudio) return;
+        if (!backend.realtime) return;
         unsigned start = callbacks.load(std::memory_order_acquire);
         for (int i = 0; i < 100 && callbacks.load(std::memory_order_acquire) - start < 3; ++i) {
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
@@ -184,19 +200,49 @@ struct KlickEngine
 };
 
 
+namespace {
+
+// The CoreAudio backend: the interface of klick_engine.cpp's own library, opened on the device of the system.
+void coreaudio_start(void * a) { static_cast<AudioInterfaceCoreAudio *>(a)->start(); }
+void coreaudio_stop(void * a) { static_cast<AudioInterfaceCoreAudio *>(a)->stop(); }
+void coreaudio_destroy(void * a) { delete static_cast<AudioInterfaceCoreAudio *>(a); }
+uint32_t coreaudio_latency(void * a) { return static_cast<AudioInterfaceCoreAudio *>(a)->output_latency_frames(); }
+
+KlickBackend make_coreaudio_backend(uint32_t rate)
+{
+    KlickBackend b = KlickBackend();
+    b.audio = new AudioInterfaceCoreAudio(rate ? rate : 48000);
+    b.id = "coreaudio";
+    b.realtime = 1;
+    b.start = coreaudio_start; b.stop = coreaudio_stop; b.destroy = coreaudio_destroy; b.output_latency = coreaudio_latency;
+    return b;
+}
+
+// The offline backend: renders only when klick_engine_render is called.
+void offline_destroy(void * a) { delete static_cast<AudioInterfaceOffline *>(a); }
+
+KlickBackend make_offline_backend(uint32_t rate)
+{
+    KlickBackend b = KlickBackend();
+    b.audio = new AudioInterfaceOffline(rate ? rate : 48000);
+    b.id = "offline";
+    b.realtime = 0;
+    b.destroy = offline_destroy;
+    return b;
+}
+
+}
+
+
 extern "C" {
 
-KlickEngine * klick_engine_create(int offline, uint32_t rate, char * error, size_t error_size)
+KlickEngine * klick_engine_create_with_backend(KlickBackend const * backend, char * error, size_t error_size)
 {
+    if (!backend || !backend->audio) { set_error(error, error_size, "no backend"); return NULL; }
+    std::unique_ptr<KlickEngine> e(new KlickEngine);
+    e->backend = *backend;      // owned from here on: ~KlickEngine destroys it, whatever happens next
     try {
-        std::unique_ptr<KlickEngine> e(new KlickEngine);
-        if (offline) {
-            e->offline.reset(new AudioInterfaceOffline(rate ? rate : 48000));
-            e->audio = e->offline.get();
-        } else {
-            e->coreaudio.reset(new AudioInterfaceCoreAudio(rate ? rate : 48000));
-            e->audio = e->coreaudio.get();
-        }
+        e->audio = static_cast<AudioInterface *>(e->backend.audio);
         e->simple.reset(new MetronomeSimple(*e->audio));
         KlickEngine * raw = e.get();
         e->simple->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b, false); });
@@ -208,7 +254,7 @@ KlickEngine * klick_engine_create(int offline, uint32_t rate, char * error, size
         e->simple->set_sound(e->accent, e->normal);
 
         e->audio->set_process_callback([raw](sample_t * buffer, nframes_t n) { raw->process(buffer, n); });
-        if (e->coreaudio) e->coreaudio->start();    // the device stays open, silent until a metronome starts
+        if (e->backend.start) e->backend.start(e->backend.audio);    // the output stays open, silent until a metronome starts
         return e.release();
     } catch (std::exception const & ex) {
         set_error(error, error_size, ex.what());
@@ -217,11 +263,31 @@ KlickEngine * klick_engine_create(int offline, uint32_t rate, char * error, size
 }
 
 
+KlickEngine * klick_engine_create(int offline, uint32_t rate, char * error, size_t error_size)
+{
+    try {
+        KlickBackend b = offline ? make_offline_backend(rate) : make_coreaudio_backend(rate);
+        return klick_engine_create_with_backend(&b, error, error_size);
+    } catch (std::exception const & ex) {
+        set_error(error, error_size, ex.what());
+        return NULL;
+    }
+}
+
+
+char const * klick_engine_backend_id(KlickEngine const * e) { return e->backend.id ? e->backend.id : ""; }
+void * klick_engine_backend_audio(KlickEngine const * e) { return e->backend.audio; }
+int klick_engine_backend_is_shutdown(KlickEngine const * e)
+{
+    return e->backend.is_shutdown ? e->backend.is_shutdown(e->backend.audio) : 0;
+}
+
+
 void klick_engine_destroy(KlickEngine * e)
 {
     if (!e) return;
     e->stop();
-    if (e->coreaudio) e->coreaudio->stop();
+    if (e->backend.stop) e->backend.stop(e->backend.audio);
     delete e;
 }
 
@@ -275,7 +341,6 @@ int klick_engine_set_simple(KlickEngine * e, float tempo, int32_t beats, int32_t
         e->pending.t_start = tempo_start; e->pending.t_increment = tempo_increment; e->pending.t_limit = tempo_limit;
         e->pending.simple_dirty = true;
         e->pending_flag.store(true, std::memory_order_release);
-        if (e->offline) { /* no audio thread: applied by the next render */ }
         return 1;
     } catch (std::exception const & ex) {
         set_error(error, error_size, ex.what());
@@ -342,7 +407,7 @@ int klick_engine_start(KlickEngine * e, KlickMode mode, char * error, size_t err
 {
     try {
         e->stop();
-        if (e->offline) e->apply_pending();
+        if (!e->backend.realtime) e->apply_pending();
         else {   // let the audio thread take the staged changes first
             for (int i = 0; i < 50 && e->pending_flag.load(std::memory_order_acquire); ++i) std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
@@ -405,17 +470,20 @@ int klick_engine_is_playing(KlickEngine const * e)
 uint64_t klick_engine_position(KlickEngine const * e) { return e->position.load(std::memory_order_acquire); }
 
 
-uint32_t klick_engine_output_latency(KlickEngine const * e) { return e->coreaudio ? e->coreaudio->output_latency_frames() : 0; }
+uint32_t klick_engine_output_latency(KlickEngine const * e)
+{
+    return e->backend.output_latency ? e->backend.output_latency(e->backend.audio) : 0;
+}
 
 
-uint32_t klick_engine_output_device(KlickEngine const * e) { return e->coreaudio ? e->coreaudio->current_device() : 0; }
+uint32_t klick_engine_output_device(KlickEngine const * e) { return e->coreaudio() ? e->coreaudio()->current_device() : 0; }
 
 
 int klick_engine_set_output_device(KlickEngine * e, uint32_t device, char * error, size_t error_size)
 {
-    if (!e->coreaudio) return 1;   // offline: nothing to move
+    if (!e->coreaudio()) return 1;   // another backend: nothing to move
     try {
-        e->coreaudio->set_device(device);
+        e->coreaudio()->set_device(device);
         return 1;
     } catch (std::exception const & ex) {
         set_error(error, error_size, ex.what());
@@ -426,9 +494,9 @@ int klick_engine_set_output_device(KlickEngine * e, uint32_t device, char * erro
 
 int klick_engine_follow_system_output(KlickEngine * e, char * error, size_t error_size)
 {
-    if (!e->coreaudio) return 0;
+    if (!e->coreaudio()) return 0;
     try {
-        return e->coreaudio->sync_with_system() ? 1 : 0;
+        return e->coreaudio()->sync_with_system() ? 1 : 0;
     } catch (std::exception const & ex) {
         set_error(error, error_size, ex.what());
         return -1;
@@ -452,11 +520,11 @@ uint64_t klick_engine_lost_beats(KlickEngine const * e) { return e->lost.load(st
 
 void klick_engine_render(KlickEngine * e, float * out, uint32_t frames)
 {
-    if (e->offline) e->offline->render(out, frames);
+    if (e->offline()) e->offline()->render(out, frames);
 }
 
 
-uint32_t klick_engine_dropouts(KlickEngine const * e) { return e->coreaudio ? e->coreaudio->discontinuities() : 0; }
-uint32_t klick_engine_max_lateness_us(KlickEngine const * e) { return e->coreaudio ? e->coreaudio->max_host_deviation_us() : 0; }
+uint32_t klick_engine_dropouts(KlickEngine const * e) { return e->coreaudio() ? e->coreaudio()->discontinuities() : 0; }
+uint32_t klick_engine_max_lateness_us(KlickEngine const * e) { return e->coreaudio() ? e->coreaudio()->max_host_deviation_us() : 0; }
 
 }

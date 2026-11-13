@@ -60,6 +60,30 @@ typedef struct {
     int32_t tempo_count;        /* number of values in 'tempi': bars * beats, and the section must have a number of bars */
 } KlickSection;
 
+/* Where the audio goes. The engine does not know CoreAudio or JACK: it talks to a backend, an object of klick that derives from
+ * AudioInterface (C++, see audio_interface.hh of klick) and the few functions below. CoreAudio and the offline engine of
+ * klick_engine_create are two backends of this kind; another one (JACK, in another library) is passed to
+ * klick_engine_create_with_backend. The structure is copied; the engine owns 'audio' from the call on. */
+typedef struct KlickBackend {
+    const char *id;                     /* "coreaudio", "offline", "jack", ...; a string that stays valid */
+    void *audio;                        /* the AudioInterface of the backend, as a void pointer */
+    int realtime;                       /* 1 when the backend has an audio thread of its own, 0 when nothing runs unless asked */
+    void (*start)(void *audio);         /* opens the stream once the engine has set its process callback; may be NULL */
+    void (*stop)(void *audio);          /* may be NULL; called before destroy */
+    void (*destroy)(void *audio);       /* called once, after the metronomes are gone; may be NULL */
+    uint32_t (*output_latency)(void *audio);   /* frames between a block being handed over and heard; may be NULL (0) */
+    int (*is_shutdown)(void *audio);    /* 1 when the backend has stopped (a JACK server that is gone); may be NULL (0) */
+} KlickBackend;
+
+/* Creates an engine on a backend. Returns NULL and writes to 'error' on failure; the backend is destroyed in that case too, so
+ * the caller never destroys it after the call. The engine works at the sample rate of the backend. */
+KlickEngine *klick_engine_create_with_backend(const KlickBackend *backend, char *error, size_t error_size);
+/* The id of the backend, and its AudioInterface (for the functions of the library that provided the backend). */
+const char *klick_engine_backend_id(const KlickEngine *);
+void *klick_engine_backend_audio(const KlickEngine *);
+/* 1 when the backend reports that it has stopped. */
+int klick_engine_backend_is_shutdown(const KlickEngine *);
+
 /* Creates an engine working at 'rate' Hz (0 for 48000). 'offline' = 0 plays on the default output device, CoreAudio
  * converting to the rate of the device (if it refuses, the engine works at the rate of the device: see
  * klick_engine_samplerate); 1 renders only when klick_engine_render is called (tests). Returns NULL on failure. */

@@ -84,7 +84,27 @@ public final class Engine: @unchecked Sendable {
         handle = h
     }
 
+    /// An engine on a backend of its own (another library than this one provides it, JACK for instance): the engine owns the
+    /// backend from here on, whether this succeeds or not. The engine works at the sample rate of the backend.
+    public init(backend: KlickBackend) throws {
+        var message = [CChar](repeating: 0, count: 256)
+        var b = backend
+        guard let h = klick_engine_create_with_backend(&b, &message, message.count) else {
+            throw EngineError(message: String(cString: message))
+        }
+        handle = h
+    }
+
     deinit { klick_engine_destroy(handle) }
+
+    /// The id of the backend: "coreaudio", "offline", or the one a library gave ("jack").
+    public var backendID: String { String(cString: klick_engine_backend_id(handle)) }
+
+    /// The AudioInterface of the backend as an opaque pointer, for the functions of the library that provided it.
+    public var backendAudio: UnsafeMutableRawPointer? { klick_engine_backend_audio(handle) }
+
+    /// True when the backend has stopped by itself (a JACK server that is gone).
+    public var isBackendShutdown: Bool { klick_engine_backend_is_shutdown(handle) != 0 }
 
     public var sampleRate: Int { Int(klick_engine_samplerate(handle)) }
 

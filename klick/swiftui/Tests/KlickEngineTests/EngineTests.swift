@@ -34,6 +34,16 @@ final class EngineTests: XCTestCase {
         return signal[start..<min(start + width, signal.count)].map { abs($0) }.max() ?? 0
     }
 
+    /// The engine knows its backend: the offline one here, which has no output device, no latency and never shuts down.
+    func testTheOfflineBackendIsReported() throws {
+        let engine = try makeEngine(sounds: false)
+        XCTAssertEqual(engine.backendID, "offline")
+        XCTAssertNotNil(engine.backendAudio)
+        XCTAssertFalse(engine.isBackendShutdown)
+        XCTAssertEqual(engine.outputLatency, 0)
+        XCTAssertEqual(engine.outputDevice, 0)
+    }
+
     func testSimpleMetronomeReportsEveryBeat() throws {
         let engine = try makeEngine()
         XCTAssertEqual(engine.sampleRate, 48000)
