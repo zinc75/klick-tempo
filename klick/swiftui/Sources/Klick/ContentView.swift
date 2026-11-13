@@ -7,21 +7,36 @@ import KlickKit
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
+    @State private var columns: NavigationSplitViewVisibility = {
+        #if DEBUG
+        // Development aid: KLICK_SIDEBAR=hidden starts with the sidebar folded.
+        if ProcessInfo.processInfo.environment["KLICK_SIDEBAR"] == "hidden" { return .detailOnly }
+        #endif
+        return .automatic
+    }()
 
-    var body: some View {
-        NavigationSplitView {
+    /// The settings: the sidebar and the page, with the footer running under both over the whole width of the window. The
+    /// metronome page has its own big button.
+    private var settingsView: some View {
+        NavigationSplitView(columnVisibility: $columns) {
             Sidebar()
                 .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
         } detail: {
             PageView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    // The metronome page has its own big button.
-                    if model.page != .metronome { FooterBar() }
-                }
                 .safeAreaInset(edge: .top, spacing: 0) {
                     if let message = model.errorMessage { ErrorBanner(message: message) { model.errorMessage = nil } }
                 }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if model.page != .metronome { FooterBar() }
+        }
+    }
+
+    var body: some View {
+        // While it plays, the live view takes the whole window: no sidebar, no footer.
+        Group {
+            if model.showsLiveView { LivePage() } else { settingsView }
         }
         // Plain window background: only the blocks are Liquid Glass.
         .containerBackground(Color.windowFill, for: .window)
@@ -32,9 +47,14 @@ struct ContentView: View {
         .focusable()
         .focusEffectDisabled()
         .onKeyPress(.space) { model.togglePlayback(); return .handled }
+        .onKeyPress(.escape) {
+            guard model.showsLiveView else { return .ignored }
+            model.leaveLiveView()
+            return .handled
+        }
         // On the metronome page: the arrows change the tempo (up and down by ten, left and right by one), T taps it.
         .onKeyPress(keys: [.upArrow, .downArrow, .leftArrow, .rightArrow]) { press in
-            guard model.page == .metronome else { return .ignored }
+            guard model.page == .metronome, !model.showsLiveView else { return .ignored }
             switch press.key {
             case .upArrow: model.nudgeTempo(10)
             case .downArrow: model.nudgeTempo(-10)
@@ -53,7 +73,7 @@ struct ContentView: View {
         .task {
             // Development aid: KLICK_AUTOPLAY=1 starts playing once the window is up (for screenshots of the playing state).
             guard ProcessInfo.processInfo.environment["KLICK_AUTOPLAY"] != nil else { return }
-            try? await Task.sleep(for: .milliseconds(1200))
+            try? await Task.sleep(for: .milliseconds(2500))
             model.start(model.mode)
         }
         .task {
@@ -104,6 +124,8 @@ struct PagePlaceholder: View {
 
 /// Toolbar items: the state of the output and the look of the application, each on its own capsule.
 struct MainToolbar: ToolbarContent {
+    @Environment(AppModel.self) private var model
+
     var body: some ToolbarContent {
         // The silent mode first, so that it is at hand from every page; then the output; then the look. On macOS 26
         // neighbouring items share one glass capsule: the two buttons leave it and take a capsule of their own.
@@ -113,13 +135,41 @@ struct MainToolbar: ToolbarContent {
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) { StatusPill() }
             ToolbarSpacer(.fixed, placement: .primaryAction)
+            // While it plays and the settings are in view: the way to the live view, by the look button.
+            if model.isPlaying && !model.showsLiveView {
+                ToolbarItem(placement: .primaryAction) { LiveViewButton(ownGlass: true) }
+                    .sharedBackgroundVisibility(.hidden)
+                ToolbarSpacer(.fixed, placement: .primaryAction)
+            }
             ToolbarItem(placement: .primaryAction) { AppearanceButton(ownGlass: true) }
                 .sharedBackgroundVisibility(.hidden)
         } else {
             ToolbarItem(placement: .primaryAction) { QuietButton() }
             ToolbarItem(placement: .primaryAction) { StatusPill() }
+            if model.isPlaying && !model.showsLiveView {
+                ToolbarItem(placement: .primaryAction) { LiveViewButton() }
+            }
             ToolbarItem(placement: .primaryAction) { AppearanceButton() }
         }
+    }
+}
+
+/// The way to the live view: four corners, as in a button that enlarges, and a word.
+struct LiveViewButton: View {
+    var ownGlass = false
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Button { model.enterLiveView() } label: {
+            Label("Vue simplifiée", systemImage: "arrow.up.left.and.arrow.down.right")
+                .labelStyle(.titleAndIcon)
+                .font(.callout)
+                .padding(.horizontal, ownGlass ? 12 : 0)
+                .frame(height: ownGlass ? 30 : nil)
+                .modifier(OwnGlass(enabled: ownGlass, capsule: true))
+        }
+        .buttonStyle(.plain)
+        .help("Ne montrer que ce qui joue (⌘0)")
     }
 }
 

@@ -78,6 +78,7 @@ public final class AppModel {
 
     public func show(_ page: Page) {
         self.page = page
+        liveViewWanted = false
         if page == .metronome { lastMode = .simple } else if page == .map { lastMode = .map }
     }
 
@@ -85,11 +86,28 @@ public final class AppModel {
 
     public var isPlaying: Bool { player.isPlaying }
 
+    private var liveViewWanted = false
+
+    /// While it plays, the window can show only what the player needs: the tempo, the beats, the section. It opens by itself
+    /// when the metronome or the map starts, and closes when it stops or when a page is chosen.
+    public var showsLiveView: Bool { liveViewWanted && isPlaying }
+
+    /// The button "Vue simplifiée".
+    public func enterLiveView() { liveViewWanted = isPlaying }
+
+    /// The button "Configuration", the key Escape: back to the page of what plays (the metronome or the map), not to the last page
+    /// that was open.
+    public func leaveLiveView() {
+        show((player.mode ?? lastMode) == .map ? .map : .metronome)
+    }
+
     public func togglePlayback() {
         isPlaying ? stop() : start(mode)
     }
 
     public func start(_ mode: Mode) {
+        // Only a start from the metronome or the map opens the live view; the settings pages stay, to hear what is changed.
+        if !isPlaying { liveViewWanted = page == .metronome || page == .map }
         do {
             if mode == .map { try player.setMap(document.sections) }
             try player.start(mode, settings: settings)
@@ -99,7 +117,10 @@ public final class AppModel {
         }
     }
 
-    public func stop() { player.stop() }
+    public func stop() {
+        player.stop()
+        liveViewWanted = false
+    }
 
     // MARK: settings and tempo map
 

@@ -94,9 +94,9 @@ struct KlickApp: App {
         WindowGroup {
             ContentView()
                 .environment(model)
-                .frame(minWidth: 940, minHeight: 700)
+                .frame(minWidth: 1100, minHeight: 740)
         }
-        .defaultSize(width: 1120, height: 780)
+        .defaultSize(width: 1180, height: 760)
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .newItem) {}
@@ -115,6 +115,11 @@ struct KlickApp: App {
             CommandGroup(replacing: .help) {}
             CommandMenu("Lecture") {
                 Button(model.isPlaying ? "Arrêter" : "Démarrer") { model.togglePlayback() }.keyboardShortcut("r", modifiers: .command)
+                Button(model.showsLiveView ? "Configuration" : "Vue simplifiée") {
+                    if model.showsLiveView { model.leaveLiveView() } else { model.enterLiveView() }
+                }
+                .keyboardShortcut("0", modifiers: .command)
+                .disabled(!model.isPlaying)
                 Toggle("Silencieux", isOn: Binding(get: { model.settings.isQuiet }, set: { model.settings.isQuiet = $0 })).keyboardShortcut("m", modifiers: [.command, .option])
             }
         }

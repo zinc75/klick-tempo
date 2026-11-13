@@ -47,6 +47,44 @@ final class AppModelTests: XCTestCase {
         model.stop()
     }
 
+    func testTheLiveViewOpensWithThePlayAndClosesOnRequest() throws {
+        let (model, _) = try makeModel()
+        XCTAssertFalse(model.showsLiveView)
+        model.togglePlayback()
+        XCTAssertTrue(model.showsLiveView)
+        model.leaveLiveView()
+        XCTAssertFalse(model.showsLiveView)
+        XCTAssertEqual(model.page, .metronome)
+        XCTAssertTrue(model.isPlaying, "the settings can be changed while it plays")
+        model.enterLiveView()
+        XCTAssertTrue(model.showsLiveView)
+        model.show(.map)
+        XCTAssertFalse(model.showsLiveView, "choosing a page leaves the live view")
+        model.togglePlayback()
+        XCTAssertFalse(model.showsLiveView)
+        model.show(.sounds)
+        model.togglePlayback()
+        XCTAssertFalse(model.showsLiveView, "the settings pages stay in view")
+        model.enterLiveView()
+        model.stop()
+        XCTAssertFalse(model.showsLiveView)
+    }
+
+    func testTheWayBackLeadsToThePageOfWhatPlays() throws {
+        let (model, _) = try makeModel()
+        model.show(.sounds)
+        model.togglePlayback()
+        model.show(.sounds)
+        model.enterLiveView()
+        model.leaveLiveView()
+        XCTAssertEqual(model.page, .metronome, "not the last page that was open")
+        model.choose(.map)
+        model.enterLiveView()
+        model.leaveLiveView()
+        XCTAssertEqual(model.page, .map, "the mode chosen in the live view")
+        model.stop()
+    }
+
     func testAFailureIsShownNotThrown() throws {
         let engine = try Engine(offline: true, rate: 48000)
         let model = AppModel(player: Player(engine: engine, soundsDirectory: URL(fileURLWithPath: "/nonexistent")), store: nil)
