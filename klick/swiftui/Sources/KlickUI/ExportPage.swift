@@ -242,7 +242,8 @@ final class ExportRun {
     var result: Result?
     private let cancelFlag = CancelFlag()
 
-    final class CancelFlag: @unchecked Sendable {
+    /// Read by the export thread, set by the window: a lock, no main actor.
+    nonisolated final class CancelFlag: @unchecked Sendable {
         private let lock = NSLock()
         private var value = false
         var isSet: Bool { lock.lock(); defer { lock.unlock() }; return value }

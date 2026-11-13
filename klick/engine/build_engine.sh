@@ -45,6 +45,9 @@ for arch in $UB_ARCHS; do
     [ -f "$prefix/lib/lib$name.a" ] && thin+=("$prefix/lib/lib$name.a")
   done
   libtool -static -o "$work/libklickengine.a" "$work/audio_interface_coreaudio.o" "$work/klick_engine.o" "${thin[@]}" 2>&1 | grep -v "has no symbols" || true
+  # No debug information of the codecs in the archive: the linker would make a debug map of it, and dsymutil then warns of symbols
+  # (the tables of libvorbis) that it cannot find in the objects.
+  strip -S "$work/libklickengine.a" 2>&1 | grep -v "already stripped" || true
   # The C test links the library like an application would.
   ub_env "$arch" clang -arch "$arch" -O2 -Wall -Wextra -I"$api" "$here/engine_c_test.c" "$work/libklickengine.a" \
     -lc++ -framework AudioToolbox -framework CoreAudio -framework Accelerate -o "$out/engine_tests/engine_c_test_$arch"

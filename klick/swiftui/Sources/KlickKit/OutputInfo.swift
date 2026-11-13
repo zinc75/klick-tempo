@@ -28,7 +28,7 @@ public struct OutputInfo: Equatable, Sendable {
                   device != kAudioObjectUnknown else { return nil }
         }
 
-        func number<T: Numeric>(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector, scope: AudioObjectPropertyScope, as: T.Type) -> T? {
+        func number<T: Numeric & BitwiseCopyable>(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector, scope: AudioObjectPropertyScope, as: T.Type) -> T? {
             var address = AudioObjectPropertyAddress(mSelector: selector, mScope: scope, mElement: kAudioObjectPropertyElementMain)
             var value: T = 0
             var n = UInt32(MemoryLayout<T>.size)
@@ -48,7 +48,6 @@ public struct OutputInfo: Equatable, Sendable {
         var frames = Int(number(device, kAudioDevicePropertyLatency, scope: kAudioDevicePropertyScopeOutput, as: UInt32.self) ?? 0)
         frames += Int(number(device, kAudioDevicePropertySafetyOffset, scope: kAudioDevicePropertyScopeOutput, as: UInt32.self) ?? 0)
         frames += info.bufferFrames
-        var size = UInt32(0)
         var streams = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreams, mScope: kAudioDevicePropertyScopeOutput,
                                                  mElement: kAudioObjectPropertyElementMain)
         var stream = AudioStreamID(kAudioObjectUnknown)
