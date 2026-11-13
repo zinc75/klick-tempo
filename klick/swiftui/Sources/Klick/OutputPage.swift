@@ -64,7 +64,7 @@ struct OutputPage: View {
                     Divider()
                     OutputRow(title: "Régler à l'oreille", detail: Text("Lancez le métronome et avancez le curseur jusqu'à ce que la lampe s'allume avec le clic.")) {
                         OffsetLamp()
-                        Button(model.isPlaying ? "Arrêter" : "Jouer") { model.togglePlayback() }.controlSize(.small)
+                        Button(LocalizedStringKey(model.isPlaying ? "Arrêter" : "Jouer")) { model.togglePlayback() }.controlSize(.small)
                     }
                 }
                 .groupBox()

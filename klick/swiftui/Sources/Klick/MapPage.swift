@@ -387,7 +387,7 @@ private struct EdgeArrow: View {
         .buttonStyle(.plain)
         .padding(.horizontal, 2)
         .transition(.opacity)
-        .accessibilityLabel(systemName == "chevron.left" ? "Vers la gauche" : "Vers la droite")
+        .accessibilityLabel(LocalizedStringKey(systemName == "chevron.left" ? "Vers la gauche" : "Vers la droite"))
     }
 }
 
@@ -489,7 +489,7 @@ private struct SectionEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(target.index == nil ? "Nouvelle section" : "Éditer la section").font(.title3).fontWeight(.semibold)
+                Text(LocalizedStringKey(target.index == nil ? "Nouvelle section" : "Éditer la section")).font(.title3).fontWeight(.semibold)
                 Text(subtitle).font(.callout).foregroundStyle(.secondary)
             }
             .padding(.bottom, 14)
@@ -515,7 +515,7 @@ private struct SectionEditor: View {
                         .pickerStyle(.segmented).labelsHidden().fixedSize()
                     }
                 }
-                row("Tempo", detail: draft.hasTempoPerBeat ? "Un tempo par temps : à modifier dans le fichier." : "Deux valeurs différentes : accélération ou ralentissement progressif.") {
+                row("Tempo", detail: LocalizedStringKey(draft.hasTempoPerBeat ? "Un tempo par temps : à modifier dans le fichier." : "Deux valeurs différentes : accélération ou ralentissement progressif.")) {
                     HStack(spacing: 6) {
                         TextField("", text: $startText).textFieldStyle(.roundedBorder).frame(width: 56).multilineTextAlignment(.trailing)
                             .onChange(of: startText) { applyTempo() }

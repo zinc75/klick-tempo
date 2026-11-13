@@ -45,7 +45,7 @@ struct AppearanceButton: View {
                 .modifier(OwnGlass(enabled: ownGlass))
         }
         .buttonStyle(.plain)
-        .help("Passer en mode \(scheme == .dark ? "clair" : "sombre")")
+        .help(LocalizedStringKey(scheme == .dark ? "Passer en mode clair" : "Passer en mode sombre"))
         .accessibilityLabel("Clair ou sombre")
         .onChange(of: stored) { choice.wrappedValue.apply() }
     }

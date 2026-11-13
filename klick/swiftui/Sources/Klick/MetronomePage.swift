@@ -57,7 +57,7 @@ private struct HeroCard: View {
                     NudgeButton(label: "+1") { model.nudgeTempo(1) }
                 }
             }
-            Text(counting ? "DÉCOMPTE" : "BATTEMENTS PAR MINUTE").font(.caption).tracking(1.5).foregroundStyle(.tertiary)
+            Text(LocalizedStringKey(counting ? "DÉCOMPTE" : "BATTEMENTS PAR MINUTE")).font(.caption).tracking(1.5).foregroundStyle(.tertiary)
             Text(verbatim: TempoWord.name(for: model.settings.tempo)).font(.title3).italic().foregroundStyle(.secondary)
             Slider(value: $model.settings.tempo, in: AppModel.tempoRange, step: 1)
                 .frame(maxWidth: 620)
@@ -263,7 +263,7 @@ private struct TrackpadPad: View {
             VStack(spacing: 2) {
                 Text(verbatim: tap.bpm.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "—")
                     .font(.system(size: 30, weight: .ultraLight)).monospacedDigit()
-                Text(tap.count == 0 ? "Tapez ici, ou touche T" : "\(tap.count) taps")
+                (tap.count == 0 ? Text("Tapez ici, ou touche T") : Text("\(tap.count) taps"))
                     .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
             .padding(.horizontal, 6)

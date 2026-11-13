@@ -104,7 +104,7 @@ struct ExportPage: View {
                 Text(verbatim: summary).font(.caption).foregroundStyle(.tertiary)
 
                 HStack(spacing: 12) {
-                    Button(run.isRunning ? "Annuler" : "Exporter…") { run.isRunning ? run.cancel() : start() }
+                    Button(LocalizedStringKey(run.isRunning ? "Annuler" : "Exporter…")) { run.isRunning ? run.cancel() : start() }
                         .buttonStyle(.borderedProminent)
                         .disabled(!run.isRunning && !canExport)
                     if run.isRunning {
@@ -162,7 +162,7 @@ struct ExportPage: View {
         let seconds = played.reduce(0) { $0 + $1.seconds }
         let barCount = played.reduce(0) { $0 + $1.bars }
         let minutes = Int(seconds) / 60, rest = Int(seconds.rounded()) % 60
-        let duration = minutes > 0 ? "\(minutes) min \(rest) s" : "\(rest) s"
+        let duration = minutes > 0 ? String(localized: "\(minutes) min \(rest) s") : String(localized: "\(rest) s")
         let bytes = format == .wav ? seconds * Double(rate) * Double(depth / 8) : Double(barCount * 24 + 200)
         let size = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
         return String(localized: "Durée : \(duration), \(Plural.bars(barCount)). Taille estimée : \(size).")

@@ -23,13 +23,13 @@ struct ModePicker: View {
         .pickerStyle(.segmented)
         .labelsHidden()
         .fixedSize()
-        .confirmationDialog(pendingMode == .map ? "Passer à la carte de tempo ?" : "Passer au métronome ?",
+        .confirmationDialog(LocalizedStringKey(pendingMode == .map ? "Passer à la carte de tempo ?" : "Passer au métronome ?"),
                             isPresented: Binding(get: { pendingMode != nil }, set: { if !$0 { pendingMode = nil } }),
                             titleVisibility: .visible, presenting: pendingMode) { mode in
             Button("Changer") { model.choose(mode) }
             Button("Annuler", role: .cancel) {}
         } message: { mode in
-            Text(mode == .map ? "Le métronome s'arrête et la carte démarre depuis le début." : "La carte s'arrête et le métronome démarre.")
+            Text(LocalizedStringKey(mode == .map ? "Le métronome s'arrête et la carte démarre depuis le début." : "La carte s'arrête et le métronome démarre."))
         }
     }
 }
@@ -133,8 +133,8 @@ struct GoButton: View {
                 withAnimation(.easeOut(duration: max(0.15, player.beatDuration))) { ring = 1 }   // spreads for one beat
             }
         }
-        .accessibilityLabel(model.isPlaying ? "Arrêter" : "Démarrer")
-        .help(model.isPlaying ? "Arrêter (barre d'espace)" : "Démarrer (barre d'espace)")
+        .accessibilityLabel(LocalizedStringKey(model.isPlaying ? "Arrêter" : "Démarrer"))
+        .help(LocalizedStringKey(model.isPlaying ? "Arrêter (barre d'espace)" : "Démarrer (barre d'espace)"))
     }
 
     /// The rod is at one end of its swing at each beat, on alternate sides. It leaves that end gently, speeds up and reaches the

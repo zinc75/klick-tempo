@@ -33,7 +33,7 @@ struct LivePage: View {
                     .monospacedDigit()
                     .contentTransition(.numericText())
                     .minimumScaleFactor(0.5)
-                Text(counting ? "DÉCOMPTE" : "BATTEMENTS PAR MINUTE").font(.caption).tracking(1.5).foregroundStyle(.tertiary)
+                Text(LocalizedStringKey(counting ? "DÉCOMPTE" : "BATTEMENTS PAR MINUTE")).font(.caption).tracking(1.5).foregroundStyle(.tertiary)
                 if !counting {
                     Text(verbatim: TempoWord.name(for: shownTempo)).font(.title3).italic().foregroundStyle(.secondary)
                 }

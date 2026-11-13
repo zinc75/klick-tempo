@@ -73,7 +73,7 @@ struct SoundsPage: View {
 
     private var pitchText: String {
         let n = Int(model.settings.pitch)
-        return (n > 0 ? "+" : "") + String(localized: "\(n) demi-ton\(abs(n) > 1 ? "s" : "")")
+        return (n > 0 ? "+" : "") + (abs(n) > 1 ? String(localized: "\(n) demi-tons") : String(localized: "\(n) demi-ton"))
     }
 
     private var pitchDetail: String {
@@ -186,7 +186,7 @@ private struct FilesRow: View {
     private func choose(accent: Bool) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.audio]
-        panel.message = String(localized: accent ? "Son de l'accent" : "Son des autres temps")
+        panel.message = accent ? String(localized: "Son de l'accent") : String(localized: "Son des autres temps")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let current = files
         let chosen = url.path
@@ -205,11 +205,11 @@ private struct ListenButtons: View {
         HStack(spacing: 6) {
             button("Accent", .accent)
             button("Normal", .normal)
-            button("Mesure", .bar)
+            button("Une mesure", .bar)
         }
         .controlSize(.small)
         .disabled(model.isPlaying)
-        .help(model.isPlaying ? "Le métronome joue : arrêtez-le pour écouter les sons." : "")
+        .help(LocalizedStringKey(model.isPlaying ? "Le métronome joue : arrêtez-le pour écouter les sons." : ""))
     }
 
     private func button(_ title: LocalizedStringKey, _ what: AppModel.Preview) -> some View {

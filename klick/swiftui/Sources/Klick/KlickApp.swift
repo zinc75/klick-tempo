@@ -128,8 +128,8 @@ struct KlickApp: App {
             }
             CommandGroup(replacing: .help) {}
             CommandMenu("Lecture") {
-                Button(model.isPlaying ? "Arrêter" : "Démarrer") { model.togglePlayback() }.keyboardShortcut("r", modifiers: .command)
-                Button(model.showsLiveView ? "Configuration" : "Vue simplifiée") {
+                Button(LocalizedStringKey(model.isPlaying ? "Arrêter" : "Démarrer")) { model.togglePlayback() }.keyboardShortcut("r", modifiers: .command)
+                Button(LocalizedStringKey(model.showsLiveView ? "Configuration" : "Vue simplifiée")) {
                     if model.showsLiveView { model.leaveLiveView() } else { model.enterLiveView() }
                 }
                 .keyboardShortcut("0", modifiers: .command)

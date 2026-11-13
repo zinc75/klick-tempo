@@ -202,7 +202,7 @@ struct QuietButton: View {
                 .modifier(OwnGlass(enabled: ownGlass))
         }
         .buttonStyle(.plain)
-        .help(model.settings.isQuiet ? "Silencieux : seulement les lampes (⌥⌘M)" : "Passer en mode silencieux (⌥⌘M)")
+        .help(LocalizedStringKey(model.settings.isQuiet ? "Silencieux : seulement les lampes (⌥⌘M)" : "Passer en mode silencieux (⌥⌘M)"))
         .accessibilityLabel("Silencieux")
     }
 }
