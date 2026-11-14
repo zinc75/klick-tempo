@@ -1,4 +1,4 @@
-# Klick: the Swift package
+# Klick Tempo: the Swift package
 
 The Swift side of the Klick application: the engine of klick seen from Swift. The interface itself is not here yet.
 
@@ -15,7 +15,7 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 swift test
 ```
 
-To try the application from the build folder (it plays on the default output device): `swift build`, then `.build/debug/Klick`. In a debug build, `KLICK_FRESH=1` starts without the saved settings and `KLICK_PAGE=map` opens a page.
+To try the application from the build folder (it plays on the default output device): `swift build`, then `.build/debug/KlickTempo`. In a debug build, `KLICK_FRESH=1` starts without the saved settings and `KLICK_PAGE=map` opens a page.
 
 The tests use an engine that renders offline: no audio device, no sound. One more test plays on the default output device at volume 0, to check the audio thread, the changes made while playing and the delivery of the blocks; run it with `KLICK_TEST_DEVICE=1 swift test`.
 
@@ -25,5 +25,5 @@ The tests use an engine that renders offline: no audio device, no sound. One mor
 - `Sources/KlickEngine`: the Swift view of it (`Engine`, `Section`, `Beat`): playback, tempo map, beat events.
 - `Sources/KlickKit`: what the application knows, without any UI: tempo map files and documents, tap tempo, meters, settings, the equivalent command line, the player that tells the interface what is heard (beat, count-in, section, tempo), and the audio backends (`AudioBackend`, with CoreAudio).
 - `Sources/KlickUI`: the window, the sidebar, the footer, the pages and the menus, shared by the applications of the family: `KlickScene` and `KlickConfiguration` are what an application uses.
-- `Sources/Klick`: the application itself, a few lines: its name, its colour and the backends it offers.
+- `Sources/KlickTempo`: the application itself, a few lines: its name, its colour and the backends it offers.
 - `Tests/KlickEngineTests`, `Tests/KlickKitTests`: unit tests.
