@@ -79,6 +79,11 @@ struct MapPage: View {
             Text("Une suite de sections jouées l'une après l'autre : mesures, tempo ou rampe, accents. Comme une partition de métronome.")
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
+            HStack(spacing: 10) {
+                TransportBadge()
+                ExternalMasterNote(mode: .map)
+            }
+            .padding(.top, 4)
         }
         .padding(.top, 8)
     }

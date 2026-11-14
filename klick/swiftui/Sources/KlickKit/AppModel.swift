@@ -45,6 +45,9 @@ public final class AppModel {
     public var errorMessage: String?
     /// What the play button of the settings pages starts: the last of the metronome and the map that was shown.
     public private(set) var lastMode = Mode.simple
+    /// The backend that was wanted and is not in use: it has stopped (a JACK server that is gone) and the first backend plays instead,
+    /// or it could not be used at launch. The window offers to try it again; the choice of the user is kept meanwhile.
+    public private(set) var fallenBackFrom: AudioBackend?
 
     private let store: SettingsStore?
 
@@ -72,6 +75,7 @@ public final class AppModel {
         if let current = backends.first(where: { $0.id == player.backendID }) { backend = current }
         if let kept = settings.backendID, let wanted = backends.first(where: { $0.id == kept }), wanted.id != backend.id {
             switchBackend(to: wanted.id)
+            if backend.id != wanted.id { fallenBackFrom = wanted }   // it could not be used: the window says why and offers to try again
         }
     }
 
@@ -119,7 +123,27 @@ public final class AppModel {
     }
 
     public func togglePlayback() {
-        isPlaying ? stop() : start(mode)
+        if isPlaying { userStopped = true; stop() } else { userStopped = false; start(mode) }
+    }
+
+    /// The user stopped what waits for the transport (or plays): it is not armed again until they start it, or change the option.
+    private var userStopped = false
+
+    /// True when what plays is to follow the transport of the backend (JACK).
+    public var followsTransport: Bool { backend.armsWithTransport(settings) }
+
+    /// With the transport followed, the metronome (or the map) is ready by itself: it waits for the transport to roll, without a press
+    /// on the button; the button stops it, and starts it again. Called with the reading of the output.
+    private func armIfNeeded() {
+        guard !isPlaying, !userStopped, !isPreviewing, errorMessage == nil, followsTransport, !player.isBackendShutdown else { return }
+        start(mode, arming: true)
+    }
+
+    /// The option of the transport has changed: what waited for it, or played without it, starts again as the option says.
+    public func transportOptionChanged() {
+        if isPlaying && followsTransport != (player.transport.state != .off) { stop() }
+        userStopped = false
+        armIfNeeded()
     }
 
     // MARK: listening to a sound
@@ -196,10 +220,11 @@ public final class AppModel {
         start(.map)
     }
 
-    public func start(_ mode: Mode) {
+    public func start(_ mode: Mode, arming: Bool = false) {
         endPreview()
         // Only a start from the metronome or the map opens the live view; the settings pages stay, to hear what is changed.
-        if !isPlaying { liveViewWanted = page == .metronome || page == .map }
+        // (Waiting for the transport is not a start: the window stays as it is.)
+        if !isPlaying { liveViewWanted = !arming && (page == .metronome || page == .map) }
         do {
             if mode == .map { try player.setMap(document.sections, startingAtBar: mapStartBar) }
             try player.start(mode, settings: settings)
@@ -246,15 +271,18 @@ public final class AppModel {
     /// Asks the backend to put the engine on the output that is wanted, and reads what plays: its name is the key of the display
     /// offset. Called now and then.
     public func refreshOutput() {
-        guard let info = backend.refresh(player: player, host: self), info != output else { return }
+        if fallBackIfStopped() { return }
+        let info = backend.refresh(player: player, host: self)
+        armIfNeeded()
+        guard let info, info != output else { return }
         output = info
         outputName = backend.displayOffsetKey(for: info)
     }
 
     /// Plays on another backend: what plays stops, the engine is made again on the new backend and the settings reach it. The
-    /// choice is kept. A backend that cannot be used (or whose engine cannot be made) leaves things as they are, with the reason
-    /// shown.
-    public func switchBackend(to id: String) {
+    /// choice is kept (unless `remember` is false: a fall back is not a choice). A backend that cannot be used (or whose engine cannot be
+    /// made) leaves things as they are, with the reason shown.
+    public func switchBackend(to id: String, remember: Bool = true) {
         guard let new = backends.first(where: { $0.id == id }), new.id != backend.id || player.backendID != new.id else { return }
         if case .unavailable(let reason) = new.availability {
             errorMessage = reason
@@ -269,10 +297,24 @@ public final class AppModel {
             return
         }
         backend = new
-        settings.backendID = new.id
+        if remember { settings.backendID = new.id }
+        fallenBackFrom = nil
         output = OutputInfo()
         errorMessage = nil
         refreshOutput()
+    }
+
+    /// When the backend in use has stopped by itself (a JACK server that is gone), the first backend takes over: what plays stops, the
+    /// reason is shown, and the stopped one stays the choice of the user (`fallenBackFrom`, to try it again). Returns true when it fell
+    /// back. Called with the reading of the output, every two seconds or so.
+    private func fallBackIfStopped() -> Bool {
+        guard player.isBackendShutdown, let first = backends.first, backend.id != first.id else { return false }
+        let lost = backend
+        switchBackend(to: first.id, remember: false)
+        guard backend.id == first.id else { return false }   // the first one cannot be used either: nothing more to do
+        fallenBackFrom = lost
+        errorMessage = String(localized: "\(lost.name) s'est arrêté : Klick joue sur \(backend.name).")
+        return true
     }
 
     /// The delay of the display for the output in use, in milliseconds (0 when none was set).

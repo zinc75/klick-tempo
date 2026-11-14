@@ -64,6 +64,12 @@ private struct HeroCard: View {
                 .frame(maxWidth: 620)
                 .padding(.top, 6)
 
+            VStack(spacing: 6) {
+                TransportBadge()
+                ExternalMasterNote(mode: .simple)
+            }
+            .padding(.top, 2)
+
             BeatLamps(lit: lit)
                 .padding(.top, 10)
 
@@ -95,6 +101,7 @@ private struct HeroCard: View {
     /// The tempo that is set, or, while the speed trainer runs, the one that plays now (it rises bar after bar).
     private var shownTempo: Double {
         let player = model.player
+        if player.transport.state != .off && player.transport.hasExternalMaster && player.mode == .simple { return player.transport.tempo }   // imposed by the timebase master
         return model.settings.trainer.isEnabled && player.phase == .playing && player.tempo > 0 ? player.tempo : model.settings.tempo
     }
 

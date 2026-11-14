@@ -53,7 +53,7 @@ struct FooterBar: View {
     }
 
     private var status: LocalizedStringKey {
-        guard model.isPlaying else { return "Arrêté" }
+        guard model.isPlaying else { return model.followsTransport ? "Arrêté : le transport JACK n'est pas suivi" : "Arrêté" }
         return shownMode == .map ? "En cours : carte de tempo" : "En cours : métronome"
     }
 
@@ -65,7 +65,11 @@ struct FooterBar: View {
                     ModePicker()
                 }
                 Text(verbatim: summary).fontWeight(.medium)
-                Text(status).font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Text(status).font(.caption).foregroundStyle(.secondary)
+                    TransportBadge()
+                }
+                ExternalMasterNote(mode: shownMode)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 

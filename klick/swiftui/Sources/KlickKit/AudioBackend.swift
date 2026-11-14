@@ -33,9 +33,13 @@ public protocol AudioBackend: AnyObject {
     func refresh(player: Player, host: BackendHost) -> OutputInfo?
     /// The key of the delay of the display (kept per output): the name of the output unless the backend says otherwise.
     func displayOffsetKey(for info: OutputInfo) -> String
+    /// True when what plays is to follow the transport of the backend (JACK): the application then starts the metronome by itself,
+    /// and it waits for the transport to roll.
+    func armsWithTransport(_ settings: ClickSettings) -> Bool
 }
 
 public extension AudioBackend {
+    func armsWithTransport(_ settings: ClickSettings) -> Bool { false }
     func displayOffsetKey(for info: OutputInfo) -> String { info.name }
 }
 

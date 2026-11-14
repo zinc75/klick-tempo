@@ -60,6 +60,12 @@ struct LivePage: View {
 
             Spacer(minLength: 12)
 
+            VStack(spacing: 8) {
+                TransportBadge()
+                ExternalMasterNote(mode: player.mode ?? .simple)
+            }
+            .padding(.bottom, 10)
+
             GoButton(diameter: 84)
                 .padding(.bottom, 24)
         }
@@ -110,7 +116,13 @@ struct LivePage: View {
 
     /// The tempo heard; the one that is set until the first beat comes.
     private var shownTempo: Double {
-        model.player.tempo > 0 ? model.player.tempo : (currentSection?.tempo ?? model.settings.tempo)
+        model.player.tempo > 0 ? model.player.tempo : (currentSection?.tempo ?? importedTempo ?? model.settings.tempo)
+    }
+
+    /// The tempo of another timebase master, which the metronome takes while it follows the transport.
+    private var importedTempo: Double? {
+        let t = model.player.transport
+        return model.player.mode == .simple && t.state != .off && t.hasExternalMaster ? t.tempo : nil
     }
 
     /// The section being played, for a map.

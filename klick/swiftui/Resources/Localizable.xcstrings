@@ -2,6 +2,34 @@
   "sourceLanguage": "fr",
   "version": "1.0",
   "strings": {
+    "%@ s'est arrêté : Klick joue sur %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ has stopped: Klick plays on %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ wurde beendet: Klick spielt über %@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ si è fermato: Klick suona su %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ se ha detenido: Klick suena en %@."
+          }
+        }
+      }
+    },
     "%@ · %@ kHz : choisir la sortie": {
       "localizations": {
         "en": {
@@ -4426,6 +4454,34 @@
         }
       }
     },
+    "Réessayer avec %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try %@ again"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut mit %@ versuchen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprova con %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reintentar con %@"
+          }
+        }
+      }
+    },
     "Réglages": {
       "localizations": {
         "en": {
@@ -6466,6 +6522,174 @@
           "stringUnit": {
             "state": "translated",
             "value": "Etiqueta"
+          }
+        }
+      }
+    },
+    "Piloté par le transport JACK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Driven by the JACK transport"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vom JACK-Transport gesteuert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pilotato dal transport JACK"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlado por el transporte JACK"
+          }
+        }
+      }
+    },
+    "En attente du transport JACK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for the JACK transport"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartet auf den JACK-Transport"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In attesa del transport JACK"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando el transporte JACK"
+          }
+        }
+      }
+    },
+    "Le départ et l'arrêt suivent le transport JACK. Le bouton arrête ; un nouvel appui remet en attente.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start and stop follow the JACK transport. The button stops it; pressing it again waits for the transport again."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start und Stopp folgen dem JACK-Transport. Die Taste hält an; erneutes Drücken wartet wieder auf den Transport."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avvio e arresto seguono il transport JACK. Il pulsante ferma; premendolo di nuovo si torna in attesa."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El inicio y la parada siguen el transporte JACK. El botón detiene; al pulsarlo de nuevo vuelve a esperar."
+          }
+        }
+      }
+    },
+    "Arrêté : le transport JACK n'est pas suivi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped: the JACK transport is not followed"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angehalten: der JACK-Transport wird nicht verfolgt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermo: il transport JACK non è seguito"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detenido: no se sigue el transporte JACK"
+          }
+        }
+      }
+    },
+    "Tempo et mesure du maître de timebase JACK : %lld BPM, %lld/%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo and meter of the JACK timebase master: %lld BPM, %lld/%lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo und Takt des JACK-Timebase-Masters: %lld BPM, %lld/%lld"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo e metro del master timebase JACK: %lld BPM, %lld/%lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo y compás del maestro de timebase JACK: %lld BPM, %lld/%lld"
+          }
+        }
+      }
+    },
+    "Un autre client JACK est maître de timebase : la carte garde son tempo, qui peut différer du sien.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another JACK client is the timebase master: the map keeps its own tempo, which may differ from its."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein anderer JACK-Client ist Timebase-Master: Die Karte behält ihr eigenes Tempo, das vom dortigen abweichen kann."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un altro client JACK è master timebase: la mappa mantiene il proprio tempo, che può differire dal suo."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otro cliente JACK es maestro de timebase: el mapa conserva su propio tempo, que puede diferir del suyo."
           }
         }
       }

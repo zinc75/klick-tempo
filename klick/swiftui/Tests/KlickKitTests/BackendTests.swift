@@ -134,6 +134,35 @@ final class BackendTests: XCTestCase {
         XCTAssertNil(model.errorMessage)
     }
 
+    func testABackendThatCouldNotBeUsedAtLaunchCanBeTriedAgain() throws {
+        var saved = ClickSettings()
+        saved.backendID = "other"
+        let store = MemoryStore()
+        store.data = try JSONEncoder().encode(saved)
+        let other = OtherBackend()
+        other.fails = true
+        let (model, _) = try makeModel(store: store, other: other)
+        XCTAssertEqual(model.backend.id, "offline", "the first backend plays meanwhile")
+        XCTAssertEqual(model.errorMessage, "no server")
+        XCTAssertEqual(model.fallenBackFrom?.id, "other", "the window offers to try it again")
+        XCTAssertEqual(model.settings.backendID, "other", "the choice of the user is kept")
+        model.switchBackend(to: "other")
+        XCTAssertEqual(model.backend.id, "offline", "still not there")
+        XCTAssertNotNil(model.fallenBackFrom)
+        other.fails = false
+        model.switchBackend(to: "other")
+        XCTAssertEqual(model.backend.id, "other")
+        XCTAssertNil(model.fallenBackFrom)
+        XCTAssertNil(model.errorMessage)
+    }
+
+    func testAFallBackIsNotAChoice() throws {
+        let (model, _) = try makeModel()
+        model.switchBackend(to: "other", remember: false)
+        XCTAssertEqual(model.backend.id, "other")
+        XCTAssertNil(model.settings.backendID)
+    }
+
     // MARK: settings
 
     func testSettingsWrittenBeforeTheBackendsStillLoad() throws {

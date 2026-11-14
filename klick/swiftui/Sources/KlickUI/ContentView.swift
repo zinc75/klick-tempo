@@ -35,7 +35,11 @@ struct ContentView: View {
             PageView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .safeAreaInset(edge: .top, spacing: 0) {
-                    if let message = model.errorMessage { ErrorBanner(message: message) { model.errorMessage = nil } }
+                    if let message = model.errorMessage {
+                        ErrorBanner(message: message, retry: model.fallenBackFrom.map { lost in
+                            (title: String(localized: "Réessayer avec \(lost.name)"), run: { model.switchBackend(to: lost.id) })
+                        }) { model.errorMessage = nil }
+                    }
                 }
         }
     }
@@ -311,6 +315,8 @@ public struct PillRow: View {
 /// A failure to start or to apply a setting, in the colour of the alerts.
 struct ErrorBanner: View {
     let message: String
+    /// A way to try again what failed, when there is one (the backend that stopped).
+    var retry: (title: String, run: () -> Void)?
     let close: () -> Void
 
     var body: some View {
@@ -318,6 +324,7 @@ struct ErrorBanner: View {
             Image(systemName: "exclamationmark.triangle.fill")
             Text(verbatim: message).textSelection(.enabled)
             Spacer(minLength: 12)
+            if let retry { Button(retry.title, action: retry.run).buttonStyle(.borderless).fontWeight(.semibold) }
             Button("Fermer", action: close).buttonStyle(.borderless)
         }
         .foregroundStyle(Color.alert)
