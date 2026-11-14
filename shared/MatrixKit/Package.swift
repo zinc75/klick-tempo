@@ -7,7 +7,7 @@ let package = Package(
     platforms: [.macOS("15.0")],
     products: [.library(name: "MatrixKit", targets: ["MatrixKit"])],
     targets: [
-        .target(name: "MatrixKit"),
+        .target(name: "MatrixKit", resources: [.process("Resources")]),
         .testTarget(name: "MatrixKitTests", dependencies: ["MatrixKit"]),
     ]
 )

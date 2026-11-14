@@ -13,6 +13,8 @@ public struct BadgeStyle: Equatable, Sendable {
         case client
         /// The hardware capture ports ("system (capture)"): a fixed cyan with a microphone.
         case capture
+        /// The hardware playback ports ("system (playback)"): a fixed violet with a loudspeaker, as in JackMate.
+        case playback
     }
 
     public let letters: String
@@ -29,6 +31,8 @@ public struct BadgeStyle: Equatable, Sendable {
         switch kind {
         case .capture:
             base = Self.rgb(hue: 0.524, saturation: 0.70, brightness: 0.78)
+        case .playback:
+            base = Self.rgb(hue: 0.78, saturation: 0.50, brightness: 0.82)
         case .client:
             base = Self.rgb(hue: Self.hue(abbreviation: abbr, fullName: name), saturation: 0.55, brightness: 0.80)
         }
@@ -73,23 +77,33 @@ public struct BadgeStyle: Equatable, Sendable {
 }
 
 /// A client badge: two letters on a rounded square whose gradient comes from the client name.
-/// The hardware capture client gets a microphone instead of the letters.
+/// The hardware capture client gets a microphone instead of the letters, the hardware playback client a loudspeaker.
 public struct BadgeView: View {
     let client: String
     var isCapture = false
+    var isPlayback = false
+    var isJackMoebiusMaster = false
     var size: CGFloat = 22
     /// The application the client stands for, if known: its real icon replaces the letters.
     var bundleID: String?
 
-    public init(client: String, isCapture: Bool = false, size: CGFloat = 22, bundleID: String? = nil) {
+    /// `isJackMoebiusMaster`: the shared input of JackMoebius, which shows the picto of JackMoebius in colour, as in JackMate.
+    public init(client: String, isCapture: Bool = false, isPlayback: Bool = false, isJackMoebiusMaster: Bool = false, size: CGFloat = 22, bundleID: String? = nil) {
         self.client = client
         self.isCapture = isCapture
+        self.isPlayback = isPlayback
+        self.isJackMoebiusMaster = isJackMoebiusMaster
         self.size = size
         self.bundleID = bundleID
     }
 
     public var body: some View {
-        if let id = bundleID, let icon = AppIcons.icon(forBundleID: id) {
+        if isJackMoebiusMaster, let picto = AppIcons.jackMoebiusPicto {
+            // The picto gives its own shape and has no margin to compensate.
+            Image(nsImage: picto).resizable().scaledToFit()
+                .frame(width: size, height: size)
+                .accessibilityHidden(true)
+        } else if let id = bundleID, let icon = AppIcons.icon(forBundleID: id) {
             // The icon gives its own shape; application icons carry a transparent margin, hence the inflation.
             Image(nsImage: icon).resizable().scaledToFit()
                 .frame(width: size, height: size)
@@ -101,13 +115,16 @@ public struct BadgeView: View {
     }
 
     private var letters: some View {
-        let style = BadgeStyle(client: client, kind: isCapture ? .capture : .client)
+        let style = BadgeStyle(client: client, kind: isCapture ? .capture : isPlayback ? .playback : .client)
         return RoundedRectangle(cornerRadius: size * 0.28)
             .fill(LinearGradient(colors: [style.top.color, style.bottom.color], startPoint: .top, endPoint: .bottom))
             .frame(width: size, height: size)
             .overlay {
                 if isCapture {
                     Image(systemName: "mic.fill").font(.system(size: size * 0.5, weight: .bold))
+                        .foregroundStyle(.black.opacity(0.55))
+                } else if isPlayback {
+                    Image(systemName: "speaker.wave.2.fill").font(.system(size: size * 0.45, weight: .bold))
                         .foregroundStyle(.black.opacity(0.55))
                 } else {
                     Text(verbatim: style.letters).font(.system(size: size * 0.5, weight: .bold))
