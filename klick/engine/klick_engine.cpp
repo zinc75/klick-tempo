@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -81,6 +82,22 @@ struct KlickEngine
     int countin_bars, countin_beats_per_bar; float countin_volume;
     std::unique_ptr<MetronomeMap> countin;  // simple mode: the count-in is a small tempo map played beside the metronome
     bool joined;                            // map mode: the count-in is the first section of the map that plays
+    bool transport_follow;                  // follow the transport of the backend (JACK): the metronome and the map play while it rolls
+    AudioInterfaceTransport * transport;    // the transport of the backend, when it has one
+    std::atomic<bool> timebase_on;          // the application asked to be the timebase master
+    bool follow_active;                     // set at start (before the mode): the simple metronome is gated by the transport
+    bool simple_runs;                       // audio thread: the simple metronome plays (always, unless it waits for the transport)
+    bool was_rolling;                       // audio thread: the transport state at the previous block
+    bool external_was;                      // audio thread: the tempo came from another timebase master at the previous block
+    bool restore_wanted;                    // audio thread: put back the tempo and meter of the settings
+    std::uint64_t synced_for;               // audio thread: block (frames + 1) the transport was last looked at
+    std::uint64_t cb_frames;                // audio thread: block (frames + 1) our timebase callback ran for
+    nframes_t last_pos_frame, last_block;   // audio thread: position of the transport at the previous block, and its size
+    std::atomic<int> sync_state;            // for the application: 0 not following, 1 waiting for the transport, 2 rolling
+    std::atomic<int> ext_present, ext_beats, ext_denom;
+    std::atomic<float> ext_tempo;           // the timebase master is another client: its tempo (quarter notes per minute) and meter
+    // BBT of the simple metronome, for the timebase callback (audio thread)
+    bool lb_valid; int lb_bar, lb_beat, lb_beats, lb_denom; float lb_tempo; std::uint64_t lb_frame; std::int64_t tb_bar_start, tb_next_bar_start;
     int countin_total, countin_index;       // beats of the count-in, and how many were reported (audio thread)
     std::atomic<bool> countin_active;
     std::int64_t countin_frames_left;       // audio thread only
@@ -95,7 +112,10 @@ struct KlickEngine
 
     KlickEngine()
       : backend(), audio(NULL), multiplier(1.0f), pending(), pending_flag(false),
-        countin_bars(0), countin_beats_per_bar(4), countin_volume(0.0f), joined(false), countin_total(0), countin_index(0),
+        countin_bars(0), countin_beats_per_bar(4), countin_volume(0.0f), joined(false), transport_follow(false), transport(NULL), timebase_on(false), follow_active(false), simple_runs(true), was_rolling(false),
+        external_was(false), restore_wanted(false), synced_for(0), cb_frames(0), last_pos_frame(0), last_block(0), sync_state(0), ext_present(0),
+        ext_beats(4), ext_denom(4), ext_tempo(0.0f), lb_valid(false), lb_bar(0), lb_beat(0), lb_beats(4), lb_denom(4), lb_tempo(120.0f), lb_frame(0),
+        tb_bar_start(0), tb_next_bar_start(0), countin_total(0), countin_index(0),
         countin_active(false), countin_frames_left(0), mode(0), callbacks(0), frames(0), position(0),
         ring(RING_SIZE), head(0), tail(0), lost(0)
     {
@@ -155,6 +175,10 @@ struct KlickEngine
         apply_pending();
         switch (mode.load(std::memory_order_acquire)) {
           case KLICK_MODE_SIMPLE:
+            if (follow_active) {
+                sync_transport(false);
+                if (!simple_runs) break;
+            }
             if (countin_active.load(std::memory_order_acquire)) {
                 countin->process_callback(buffer, nframes);
                 if (countin_frames_left <= static_cast<std::int64_t>(nframes)) countin_active.store(false, std::memory_order_release);
@@ -162,12 +186,140 @@ struct KlickEngine
             }
             simple->process_callback(buffer, nframes);
             break;
-          case KLICK_MODE_MAP:    map->process_callback(buffer, nframes); break;
+          case KLICK_MODE_MAP:
+            if (follow_active) sync_transport(false);
+            map->process_callback(buffer, nframes);
+            break;
           default: break;
         }
+        last_block = nframes;
         frames += nframes;
         position.store(frames, std::memory_order_release);
         callbacks.fetch_add(1, std::memory_order_release);
+    }
+
+
+    static constexpr double TPB = 1920.0;   // ticks per beat published to the transport (as klick does)
+
+    // The tempo and the meter of the settings, put back when the tempo of another timebase master no longer applies.
+    void restore_settings()
+    {
+        std::unique_lock<std::mutex> lock(pending_mutex, std::try_to_lock);
+        if (!lock.owns_lock()) return;      // next block
+        simple->set_tempo(pending.tempo);
+        simple->set_meter(pending.beats, pending.denom);
+        simple->set_pattern(pending.pattern);
+        restore_wanted = false;
+    }
+
+    // Starts the simple metronome again with the transport that has just started or moved. Another client that is the timebase master
+    // gives the position in bars and beats: the first click is the next beat of the song, not a first beat. Audio thread.
+    void restart_simple(bool external, position_t const & p)
+    {
+        simple->stop();
+        simple->set_start_delay(0);
+        simple->set_start_position(0, 0);
+        if (external) {
+            double beat_frames = audio->samplerate() * 60.0 / p.beats_per_minute;   // (the beat of the master's meter)
+            double done = p.tick / TPB;
+            int bar = static_cast<int>(p.bar) - 1, beat = static_cast<int>(p.beat) - 1;
+            nframes_t delay = 0;
+            if (done > 0.0) {   // in the middle of a beat: the next one is the first click
+                delay = static_cast<nframes_t>((1.0 - done) * beat_frames);
+                if (++beat >= static_cast<int>(p.beats_per_bar)) { beat = 0; ++bar; }
+            }
+            simple->set_start_delay(delay);
+            simple->set_start_position(std::max(bar, 0), std::max(beat, 0));
+        }
+        tb_bar_start = 0; tb_next_bar_start = 0; lb_valid = false;
+        simple->start();
+        simple_runs = true;
+    }
+
+    // Looks at the transport once per block: the simple metronome starts and stops with it, and takes the tempo and the meter of
+    // another timebase master. `mine`: called by our own timebase callback (we are the master, nobody else gives a tempo). Audio thread.
+    void sync_transport(bool mine)
+    {
+        if (!transport || synced_for == frames + 1) return;
+        synced_for = frames + 1;
+        int m = mode.load(std::memory_order_acquire);
+        bool rolling = transport->transport_rolling();
+        position_t p = position_t();
+        bool external = false;
+        if (cb_frames == frames + 1) mine = true;   // our callback has run for this block (a tempo map answers it without going through here)
+        if (!mine && (!timebase_on.load(std::memory_order_relaxed) || rolling)) {
+            // (a master that is us would have been called before this block: if it was not, another one has taken the place)
+            p = transport->position();
+            external = (p.valid & JackPositionBBT) && p.beats_per_minute > 0.0 && p.beat_type > 0.0f && p.beats_per_bar > 0.0f;
+        }
+        float tempo = external ? static_cast<float>(p.beats_per_minute * 4.0 / p.beat_type) : 0.0f;
+        ext_present.store(external ? 1 : 0, std::memory_order_relaxed);
+        if (external) {
+            ext_tempo.store(tempo, std::memory_order_relaxed);
+            ext_beats.store(static_cast<int>(p.beats_per_bar), std::memory_order_relaxed);
+            ext_denom.store(static_cast<int>(p.beat_type), std::memory_order_relaxed);
+        }
+        if (m == KLICK_MODE_MAP) {   // the map has the position of the transport; the tempo is its own
+            sync_state.store(rolling ? 2 : 1, std::memory_order_relaxed);
+            return;
+        }
+        if (m != KLICK_MODE_SIMPLE) return;
+
+        if (external) {
+            if (std::fabs(tempo - simple->tempo()) > 0.001f) simple->set_tempo(tempo);
+            int beats = static_cast<int>(p.beats_per_bar), denom = static_cast<int>(p.beat_type);
+            if (beats != simple->beats() || denom != simple->denom()) simple->set_meter(beats, denom);
+            external_was = true;
+        } else if (external_was) {
+            external_was = false;
+            restore_wanted = true;
+        }
+        if (restore_wanted) restore_settings();
+
+        bool moved = external && rolling && was_rolling && p.frame != last_pos_frame + last_block;   // relocated while rolling
+        if (rolling && (!was_rolling || moved)) {
+            restart_simple(external, p);
+            sync_state.store(2, std::memory_order_relaxed);
+        } else if (!rolling && was_rolling) {
+            simple->stop();
+            simple_runs = false;
+            sync_state.store(1, std::memory_order_relaxed);
+        }
+        was_rolling = rolling;
+        last_pos_frame = p.frame;
+    }
+
+    // The beat the simple metronome has just scheduled, for the timebase callback. Audio thread.
+    void note_simple_beat(Metronome::BeatEvent const & b)
+    {
+        lb_valid = true; lb_bar = b.bar; lb_beat = b.beat; lb_beats = b.beats; lb_denom = b.denom; lb_tempo = b.tempo; lb_frame = frames + b.offset;
+        if (b.beat == 0) {
+            tb_bar_start = tb_next_bar_start;
+            tb_next_bar_start += static_cast<std::int64_t>(b.beats * TPB);
+        }
+    }
+
+    // Our timebase callback: the bars and beats of what plays, for the other clients. Audio thread, called before the block is processed.
+    void timebase(position_t * p)
+    {
+        cb_frames = frames + 1;
+        int m = mode.load(std::memory_order_acquire);
+        if (m == KLICK_MODE_MAP && map) { map->timebase_callback(p); return; }
+        if (m == KLICK_MODE_SIMPLE && follow_active) sync_transport(true);
+        p->valid = JackPositionBBT;
+        p->ticks_per_beat = TPB;
+        if (m == KLICK_MODE_SIMPLE && simple_runs && lb_valid && lb_tempo > 0.0f && lb_denom > 0) {
+            double d = audio->samplerate() * 240.0 / (lb_tempo * lb_denom);   // frames in the beat
+            double done = std::max(0.0, std::min(0.999, (static_cast<double>(frames) - static_cast<double>(lb_frame)) / d));
+            p->bar = lb_bar + 1; p->beat = lb_beat + 1; p->tick = static_cast<std::int32_t>(done * TPB);
+            p->bar_start_tick = static_cast<double>(tb_bar_start);
+            p->beats_per_bar = static_cast<float>(lb_beats); p->beat_type = static_cast<float>(lb_denom);
+            p->beats_per_minute = lb_tempo * lb_denom / 4.0;
+        } else {   // nothing plays yet: the start of the first bar, with the tempo of the settings
+            p->bar = 1; p->beat = 1; p->tick = 0; p->bar_start_tick = 0.0;
+            p->beats_per_bar = static_cast<float>(simple->beats()); p->beat_type = static_cast<float>(simple->denom());
+            p->beats_per_minute = simple->tempo() * simple->denom() / 4.0;
+        }
     }
 
     TempoMapPtr countin_map(float tempo, int denom) const
@@ -196,6 +348,9 @@ struct KlickEngine
         if (countin) { countin->stop(); countin.reset(); }
         if (map) { map->stop(); map.reset(); }
         joined = false;
+        follow_active = false; simple_runs = true; was_rolling = false; external_was = false; restore_wanted = false;
+        sync_state.store(0, std::memory_order_relaxed);
+        ext_present.store(0, std::memory_order_relaxed);
     }
 };
 
@@ -249,7 +404,8 @@ KlickEngine * klick_engine_create_with_backend(KlickBackend const * backend, cha
         e->audio = static_cast<AudioInterface *>(e->backend.audio);
         e->simple.reset(new MetronomeSimple(*e->audio));
         KlickEngine * raw = e.get();
-        e->simple->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b, false); });
+        e->transport = dynamic_cast<AudioInterfaceTransport *>(e->audio);
+        e->simple->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b, false); raw->note_simple_beat(b); });
 
         // Silent sounds until the application loads some: a metronome without a sound must not crash.
         e->accent.reset(new AudioChunk(e->audio->samplerate()));
@@ -416,9 +572,13 @@ int klick_engine_start(KlickEngine * e, KlickMode mode, char * error, size_t err
             for (int i = 0; i < 50 && e->pending_flag.load(std::memory_order_acquire); ++i) std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
         KlickEngine * raw = e;
+        e->follow_active = e->transport_follow && e->transport;
         if (mode == KLICK_MODE_SIMPLE) {
             e->simple->set_start_delay(0);
-            if (e->countin_bars > 0) {
+            e->simple->set_start_position(0, 0);
+            e->lb_valid = false; e->tb_bar_start = 0; e->tb_next_bar_start = 0;
+            // with the transport, the metronome waits for it to roll: no count-in, and the first click is the first beat
+            if (e->countin_bars > 0 && !e->follow_active) {
                 float tempo = e->pending.tempo;
                 if (e->pending.t_increment != 0.0f && e->pending.t_start != 0.0f) tempo = e->pending.t_start;   // the speed trainer starts slower
                 e->countin.reset(new MetronomeMap(*e->audio, e->countin_map(tempo, e->pending.denom), 1.0f, false, -1, ""));
@@ -431,21 +591,27 @@ int klick_engine_start(KlickEngine * e, KlickMode mode, char * error, size_t err
                 e->countin_frames_left = delay;
                 e->countin_active.store(true, std::memory_order_release);
             }
-            e->simple->start();
+            if (e->follow_active) {
+                e->simple_runs = false; e->was_rolling = false;
+                e->sync_state.store(1, std::memory_order_relaxed);
+            } else {
+                e->simple->start();
+            }
             e->mode.store(KLICK_MODE_SIMPLE, std::memory_order_release);
         } else if (mode == KLICK_MODE_MAP) {
             if (!e->tempomap) throw std::runtime_error("no tempo map");
             TempoMapConstPtr played = e->tempomap;
-            e->joined = e->countin_bars > 0;
+            e->joined = e->countin_bars > 0 && !e->follow_active;   // (with the transport, the map has the time of the song: no count-in before it)
             if (e->joined) {   // the count-in is the first section: same tempo, meter unit and timing as the map
                 TempoMap::Entry const & first = e->tempomap->entry(0);
                 e->countin_total = e->countin_bars * e->countin_beats_per_bar; e->countin_index = 0;
                 played = TempoMap::join(e->countin_map(first.tempo ? first.tempo : first.tempi[0], first.denom), e->tempomap);
             }
-            e->map.reset(new MetronomeMap(*e->audio, played, e->multiplier, false, -1, ""));
+            e->map.reset(new MetronomeMap(*e->audio, played, e->multiplier, e->follow_active, -1, ""));
             e->map->set_sound(e->accent, e->normal);
             e->map->set_beat_callback([raw](Metronome::BeatEvent const & b) { raw->push_beat(b, false); });
             e->map->start();
+            if (e->follow_active) { e->was_rolling = false; e->sync_state.store(1, std::memory_order_relaxed); }
             e->mode.store(KLICK_MODE_MAP, std::memory_order_release);
         } else {
             throw std::runtime_error("unknown mode");
@@ -459,6 +625,36 @@ int klick_engine_start(KlickEngine * e, KlickMode mode, char * error, size_t err
 
 
 void klick_engine_stop(KlickEngine * e) { e->stop(); }
+
+
+void klick_engine_set_transport_follow(KlickEngine * e, int follow) { e->transport_follow = follow != 0 && e->transport; }
+
+
+int klick_engine_set_timebase_master(KlickEngine * e, int on, char * error, size_t error_size)
+{
+    if (!e->transport) { if (!on) return 1; set_error(error, error_size, "no transport"); return 0; }
+    try {
+        KlickEngine * raw = e;
+        e->timebase_on.store(on != 0, std::memory_order_relaxed);
+        e->transport->set_timebase_callback(on ? AudioInterfaceTransport::TimebaseCallback([raw](position_t * p) { raw->timebase(p); })
+                                               : AudioInterfaceTransport::TimebaseCallback());
+        return 1;
+    } catch (std::exception const & ex) {
+        e->timebase_on.store(false, std::memory_order_relaxed);
+        set_error(error, error_size, ex.what());
+        return 0;
+    }
+}
+
+
+void klick_engine_transport_info(KlickEngine const * e, KlickTransportInfo * info)
+{
+    info->state = e->sync_state.load(std::memory_order_relaxed);
+    info->external = e->ext_present.load(std::memory_order_relaxed);
+    info->tempo = e->ext_tempo.load(std::memory_order_relaxed);
+    info->beats = e->ext_beats.load(std::memory_order_relaxed);
+    info->denom = e->ext_denom.load(std::memory_order_relaxed);
+}
 
 
 int klick_engine_is_playing(KlickEngine const * e)

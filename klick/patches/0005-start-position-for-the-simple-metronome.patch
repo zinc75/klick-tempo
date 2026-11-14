@@ -1,0 +1,43 @@
+--- a/src/metronome_simple.hh
++++ b/src/metronome_simple.hh
+@@ -42,6 +42,9 @@
+     // The first beat is played this many frames after start(); 0 by default. Set it before start().
+     void set_start_delay(nframes_t frames) { _start_delay = frames; }
+ 
++    // The first beat played is this beat of this bar, both counted from 0 (0 and 0 by default). Set it before start().
++    void set_start_position(int bar, int beat) { _start_bar = bar; _start_beat = beat; }
++
+     void tap(double now);
+     void tap();
+ 
+@@ -77,6 +80,8 @@
+     nframes_t _frame;
+     nframes_t _next;
+     nframes_t _start_delay;
++    int _start_bar;
++    int _start_beat;
+     int _beat;
+     int _bar;
+ 
+--- a/src/metronome_simple.cc
++++ b/src/metronome_simple.cc
+@@ -31,6 +31,8 @@
+   , _frame(0)
+   , _next(0)
+   , _start_delay(0)
++  , _start_bar(0)
++  , _start_beat(0)
+   , _beat(0)
+   , _bar(0)
+   , _tapped(false)
+@@ -101,8 +103,8 @@
+ 
+ void MetronomeSimple::do_start()
+ {
+-    _beat = 0;
+-    _bar = 0;
++    _beat = _start_beat < _beats ? _start_beat : 0;
++    _bar = _start_bar;
+     _next = _start_delay;
+     _frame = 0;
+ 

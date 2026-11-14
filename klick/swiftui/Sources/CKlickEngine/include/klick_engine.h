@@ -145,6 +145,22 @@ uint64_t klick_engine_lost_beats(const KlickEngine *);
 /* Offline engines: renders 'frames' mono frames into 'out'. */
 void klick_engine_render(KlickEngine *, float *out, uint32_t frames);
 
+/* Follow the transport of the backend, for a tempo map (the simple metronome has no transport): the map plays while the transport
+ * rolls, at the position the transport has (what klick does with --accompany-transport), and goes on until the engine is stopped,
+ * since the end of the map is not the end of the song. There is no count-in then. Only a backend that has a transport (JACK) has
+ * an effect; read when the map starts (klick_engine_start). Off by default. */
+void klick_engine_set_transport_follow(KlickEngine *, int follow);
+
+/* Be the timebase master of the transport (bars, beats and tempo for the other clients), replacing the one there is; 0 gives it up.
+ * Returns 0 (with a message) when the backend has no transport or the master cannot be taken. */
+int klick_engine_set_timebase_master(KlickEngine *, int on, char * error, size_t error_size);
+
+/* What the transport does to the engine, for the display: state 0 not following (or stopped), 1 waiting for the transport to roll,
+ * 2 rolling; external is 1 when another client is the timebase master, with its tempo (quarter notes per minute) and meter, which the
+ * simple metronome takes (a tempo map keeps its own). */
+typedef struct KlickTransportInfo { int32_t state; int32_t external; float tempo; int32_t beats; int32_t denom; } KlickTransportInfo;
+void klick_engine_transport_info(KlickEngine const *, KlickTransportInfo * info);
+
 /* Delivery diagnostics of the output device since the engine was created (0 for offline engines). */
 uint32_t klick_engine_dropouts(const KlickEngine *);
 uint32_t klick_engine_max_lateness_us(const KlickEngine *);
