@@ -17,7 +17,7 @@
 # with environment variables: KLICK_PACKAGE_DIR (the Swift package to build, default this one), KLICK_APP_NAME, KLICK_EXECUTABLE (the program in the bundle),
 # KLICK_PRODUCT (the executable product of the package that becomes it, default the same name),
 # KLICK_BUNDLE_ID, KLICK_OUT (where the bundle is made, default ./build), KLICK_VERSION_DIR (holds VERSION and REVISION, default this
-# folder), KLICK_ASSETS (the asset catalogue with the AppIcon, default Resources/Assets.xcassets), KLICK_HELPER (the klick program to embed in Contents/Helpers, default none: Klick Tempo has no JACK), KLICK_EXTRA_CATALOGS (more string catalogs, merged with the one of the core) and KLICK_NOTICE (a text added to SOURCE.txt).
+# folder), KLICK_ASSETS (the asset catalogue with the AppIcon, default Resources/Assets.xcassets), KLICK_HELPER (the klick program to embed in Contents/Helpers, default none: Klick Tempo has no JACK), KLICK_EXTRA_CATALOGS (more string catalogs, merged with the one of the core) and KLICK_NOTICE (a text added to SOURCE.txt) and KLICK_REPO (the repository named in SOURCE.txt, default the one of Klick Tempo).
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -32,6 +32,7 @@ VERSION_DIR="${KLICK_VERSION_DIR:-$here}"
 ASSETS="${KLICK_ASSETS:-$here/Resources/Assets.xcassets}"
 EXTRA_CATALOGS="${KLICK_EXTRA_CATALOGS:-}"
 NOTICE="${KLICK_NOTICE:-}"
+REPO_URL="${KLICK_REPO:-https://github.com/zinc75/klick-tempo}"
 VERSION=$(cat "$VERSION_DIR/VERSION" 2>/dev/null || echo "0.0.0")
 # VERSION is the version of klick; REVISION counts the releases of the macOS edition for that version.
 REVISION=$(cat "$VERSION_DIR/REVISION" 2>/dev/null || echo "0")
@@ -127,14 +128,14 @@ fi
 
 echo "      licence texts"
 # The GPL of klick, the licences of the libraries linked statically into the engine, and where the source is.
-python3 -I - "$here/.." "$APP/Contents/Resources/Licenses" "$APP_NAME" "$NOTICE" <<'PY'
+python3 -I - "$here/.." "$APP/Contents/Resources/Licenses" "$APP_NAME" "$NOTICE" "$REPO_URL" <<'PY'
 import pathlib, re, shutil, sys
 tool = pathlib.Path(sys.argv[1]).resolve()
 libs = tool.parent / "libs"
 out = pathlib.Path(sys.argv[2]); out.mkdir(parents=True, exist_ok=True)
 app_name = sys.argv[3]
 notice = pathlib.Path(sys.argv[4]).read_text(encoding="utf-8") if sys.argv[4] else ""
-REPO = "https://github.com/zinc75/jack-apps-collection-macos"
+REPO = sys.argv[5]
 UPSTREAM = "https://github.com/dsacre/klick"
 
 shutil.copyfile(tool / "upstream" / "COPYING", out / "klick-COPYING.txt")

@@ -95,7 +95,7 @@ struct ContentView: View {
             model.start(model.mode)
         }
         .task {
-            // Development aid: KLICK_LIVE=1 opens the simplified view once the window is up, also while only waiting for the transport.
+            // Development aid: KLICK_LIVE=1 opens the simplified view once the window is up, also while the metronome only waits to be started.
             guard ProcessInfo.processInfo.environment["KLICK_LIVE"] != nil else { return }
             try? await Task.sleep(for: .milliseconds(3500))
             model.enterLiveView()

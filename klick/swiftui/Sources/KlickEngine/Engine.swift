@@ -11,29 +11,6 @@ public enum BeatType: Int32, Sendable {
 }
 
 /// One beat, scheduled by the audio thread; silent beats are reported too.
-/// The state of the engine with regard to the transport of the backend.
-public struct TransportInfo: Equatable, Sendable {
-    public enum State: Int, Sendable {
-        /// Not following (or stopped).
-        case off = 0
-        /// Following: waits for the transport to roll.
-        case waiting = 1
-        /// Following: the transport rolls, and what plays plays with it.
-        case rolling = 2
-    }
-    public var state = State.off
-    /// Another client is the timebase master; `tempo` (quarter notes per minute), `beats` and `denominator` are its tempo and meter.
-    /// The simple metronome takes them; a tempo map keeps its own.
-    public var hasExternalMaster = false
-    public var tempo = 0.0
-    public var beats = 4
-    public var denominator = 4
-
-    public init(state: State = .off, hasExternalMaster: Bool = false, tempo: Double = 0, beats: Int = 4, denominator: Int = 4) {
-        self.state = state; self.hasExternalMaster = hasExternalMaster; self.tempo = tempo; self.beats = beats; self.denominator = denominator
-    }
-}
-
 public struct Beat: Equatable, Sendable {
     /// Position of the beat, in frames since the engine began rendering.
     public var frame: UInt64
@@ -206,31 +183,10 @@ public final class Engine: @unchecked Sendable {
 
     public func stop() { klick_engine_stop(handle) }
 
-    /// The metronome and the tempo map follow the transport of the backend (JACK) when they start: they play while the transport rolls
-    /// (the map at the position of the transport, the metronome from its first beat, or from the beat of the song when another client
-    /// is the timebase master), until they are stopped; there is no count-in then. No effect on another backend. Off by default.
-    public func setTransportFollow(_ follow: Bool) {
-        klick_engine_set_transport_follow(handle, follow ? 1 : 0)
-        followsTransport = follow && backendID == "jack"
-    }
-
-    /// True when the engine was asked to follow the transport, and the backend has one.
-    public private(set) var followsTransport = false
-
-    /// Becomes the timebase master of the transport (bars, beats and tempo for the other clients), replacing the one there is; or
-    /// gives it up. Throws when the backend has no transport or the master cannot be taken.
-    public func setTimebaseMaster(_ on: Bool) throws {
-        var message = [CChar](repeating: 0, count: 256)
-        if klick_engine_set_timebase_master(handle, on ? 1 : 0, &message, message.count) == 0 { throw EngineError(message: String(cString: message)) }
-    }
-
-    /// What the transport does to the engine (read now and then, from the control thread).
-    public var transportInfo: TransportInfo {
-        var raw = KlickTransportInfo()
-        klick_engine_transport_info(handle, &raw)
-        return TransportInfo(state: TransportInfo.State(rawValue: Int(raw.state)) ?? .off, hasExternalMaster: raw.external != 0,
-                             tempo: Double(raw.tempo), beats: Int(raw.beats), denominator: Int(raw.denom))
-    }
+    /// True when the next start will wait for an extension of the engine (a backend that brings its own signal) instead of playing at
+    /// once; and when what plays now does. No count-in then.
+    public var startIsGated: Bool { klick_engine_start_is_gated(handle) != 0 }
+    public var runIsGated: Bool { klick_engine_run_is_gated(handle) != 0 }
 
     /// True while something plays; a tempo map that has reached its end is no longer playing.
     public var isPlaying: Bool { klick_engine_is_playing(handle) != 0 }

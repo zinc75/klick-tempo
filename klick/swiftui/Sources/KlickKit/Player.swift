@@ -33,8 +33,8 @@ public final class Player {
     /// Position in the tempo map, in bars from its start (the fraction is the beat).
     public private(set) var mapPosition = 0.0
     public private(set) var message: String?
-    /// What the transport of the backend (JACK) does to what plays: waiting for it, rolling with it, the tempo of another master.
-    public private(set) var transport = TransportInfo()
+    /// Called at each turn of the display loop, and when playing stops: a backend that has a state of its own to show reads it there.
+    public var didUpdate: (() -> Void)?
 
     /// Extra delay of the display for the output in use, in milliseconds (set from `ClickSettings.displayOffsets`).
     public var displayOffsetMilliseconds = 0.0
@@ -147,8 +147,8 @@ public final class Player {
         stop()
         try apply(settings)
         let beatsPerBar = mode == .map ? (map.indices.contains(startSection) ? map[startSection].beats : settings.beats) : settings.beats
-        // (following the transport, there is no count-in: the song has its own)
-        let count = engine.followsTransport ? (bars: 0, beatsPerBar: beatsPerBar) : settings.countIn.engineParameters(beatsPerBar: beatsPerBar)
+        // (when the start waits for a signal of the backend, there is no count-in: the song has its own)
+        let count = engine.startIsGated ? (bars: 0, beatsPerBar: beatsPerBar) : settings.countIn.engineParameters(beatsPerBar: beatsPerBar)
         try engine.setCountIn(bars: count.bars, beatsPerBar: count.beatsPerBar, volume: settings.isCountInAudible && !settings.isQuiet ? 0.66 : 0)
         try engine.start(mode)
         self.mode = mode
@@ -156,7 +156,6 @@ public final class Player {
         pending = []
         countInRemaining = 0
         phase = count.bars > 0 ? .countIn : .playing
-        transport = engine.transportInfo
         readLatency(force: true)
         loop = Task { @MainActor [weak self] in
             while !Task.isCancelled {
@@ -174,7 +173,7 @@ public final class Player {
         beat = nil
         countInRemaining = 0
         pending = []
-        if transport != TransportInfo() { transport = TransportInfo() }
+        didUpdate?()
     }
 
     /// Releases the beats that are heard by now. Called by the display loop; public so that tests can drive it.
@@ -182,8 +181,7 @@ public final class Player {
         guard phase != .stopped else { return }
         pending += engine.pollBeats()
         readLatency(force: false)
-        let info = engine.transportInfo
-        if info != transport { transport = info }
+        didUpdate?()
         // A lamp cannot light before the engine has scheduled its beat: the delay, the announced latency plus the offset, stays at 0
         // or above (a negative offset can take back what the output announces, not more).
         let delay = quiet ? 0 : max(0, latencyFrames + Int(displayOffsetMilliseconds * Double(engine.sampleRate) / 1000))

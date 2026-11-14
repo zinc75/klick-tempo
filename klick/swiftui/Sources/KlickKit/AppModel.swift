@@ -126,24 +126,24 @@ public final class AppModel {
         if isPlaying { userStopped = true; stop() } else { userStopped = false; start(mode) }
     }
 
-    /// The user stopped what waits for the transport (or plays): it is not armed again until they start it, or change the option.
+    /// The user stopped what waited (or played): it is not started by itself again until they start it, or change the way it starts.
     private var userStopped = false
 
-    /// True when what plays is to follow the transport of the backend (JACK).
-    public var followsTransport: Bool { backend.armsWithTransport(settings) }
+    /// True when the backend wants what plays to be started by the application by itself (it then waits for a signal of the backend).
+    public var backendStartsByItself: Bool { backend.startsByItself(settings) }
 
-    /// With the transport followed, the metronome (or the map) is ready by itself: it waits for the transport to roll, without a press
-    /// on the button; the button stops it, and starts it again. Called with the reading of the output.
-    private func armIfNeeded() {
-        guard !isPlaying, !userStopped, !isPreviewing, errorMessage == nil, followsTransport, !player.isBackendShutdown else { return }
+    /// When the backend starts by itself, the metronome (or the map) is ready as soon as it can be, without a press on the button, and
+    /// waits for the backend's signal; the button stops it, and starts it again. Called with the reading of the output.
+    private func startByItselfIfNeeded() {
+        guard !isPlaying, !userStopped, !isPreviewing, errorMessage == nil, backendStartsByItself, !player.isBackendShutdown else { return }
         start(mode, arming: true)
     }
 
-    /// The option of the transport has changed: what waited for it, or played without it, starts again as the option says.
-    public func transportOptionChanged() {
-        if isPlaying && followsTransport != (player.transport.state != .off) { stop() }
+    /// The way the backend starts what plays has changed: what waited, or played without waiting, starts again as the new way says.
+    public func startModeChanged() {
+        if isPlaying && backendStartsByItself != player.engine.runIsGated { stop() }
         userStopped = false
-        armIfNeeded()
+        startByItselfIfNeeded()
     }
 
     // MARK: listening to a sound
@@ -223,7 +223,7 @@ public final class AppModel {
     public func start(_ mode: Mode, arming: Bool = false) {
         endPreview()
         // Only a start from the metronome or the map opens the live view; the settings pages stay, to hear what is changed.
-        // (Waiting for the transport is not a start: the window stays as it is.)
+        // (A start by itself, waiting for the signal of the backend, is not a start: the window stays as it is.)
         if !isPlaying { liveViewWanted = !arming && (page == .metronome || page == .map) }
         do {
             if mode == .map { try player.setMap(document.sections, startingAtBar: mapStartBar) }
@@ -273,7 +273,7 @@ public final class AppModel {
     public func refreshOutput() {
         if fallBackIfStopped() { return }
         let info = backend.refresh(player: player, host: self)
-        armIfNeeded()
+        startByItselfIfNeeded()
         guard let info, info != output else { return }
         output = info
         outputName = backend.displayOffsetKey(for: info)

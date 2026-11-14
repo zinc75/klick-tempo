@@ -17,6 +17,34 @@ public protocol BackendInterface {
     func outputSections(model: AppModel) -> AnyView
     /// What the menu of the pill shows for this backend, below the choice of the backend.
     func pillMenu(model: AppModel, close: @escaping () -> Void) -> AnyView
+    /// A small view of the state of the backend, at one of the places of the window that have a slot for it (nothing by default).
+    func statusView(_ place: BackendStatusPlace, model: AppModel) -> AnyView
+}
+
+public extension BackendInterface {
+    func statusView(_ place: BackendStatusPlace, model: AppModel) -> AnyView { AnyView(EmptyView()) }
+}
+
+/// The places of the window where a backend can show something of its own state.
+public enum BackendStatusPlace: Sendable {
+    /// Under the line that says what plays, in the footer of the settings pages.
+    case footer
+    /// In the simplified view, above the button.
+    case live
+    /// On the page of the metronome, under the tempo.
+    case metronome
+    /// On the page of the tempo map, under its title.
+    case map
+}
+
+/// The slot of the window for the status of the backend in use: what its interface puts there, nothing for the others.
+struct BackendStatus: View {
+    @Environment(AppModel.self) private var model
+    let place: BackendStatusPlace
+
+    var body: some View {
+        BackendRegistry.interface(for: model.backend.id).statusView(place, model: model)
+    }
 }
 
 /// The interfaces of the backends the application offers, by backend id.

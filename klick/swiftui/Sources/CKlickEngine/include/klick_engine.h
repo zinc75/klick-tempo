@@ -62,17 +62,18 @@ typedef struct {
 
 /* Where the audio goes. The engine does not know CoreAudio or JACK: it talks to a backend, an object of klick that derives from
  * AudioInterface (C++, see audio_interface.hh of klick) and the few functions below. CoreAudio and the offline engine of
- * klick_engine_create are two backends of this kind; another one (JACK, in another library) is passed to
+ * klick_engine_create are two backends of this kind; another one, from another library, is passed to
  * klick_engine_create_with_backend. The structure is copied; the engine owns 'audio' from the call on. */
 typedef struct KlickBackend {
-    const char *id;                     /* "coreaudio", "offline", "jack", ...; a string that stays valid */
+    const char *id;                     /* "coreaudio", "offline", ...; a string that stays valid */
     void *audio;                        /* the AudioInterface of the backend: a pointer to that base class (not to a derived one), as a void pointer */
     int realtime;                       /* 1 when the backend has an audio thread of its own, 0 when nothing runs unless asked */
     void (*start)(void *audio);         /* opens the stream once the engine has set its process callback; may be NULL */
     void (*stop)(void *audio);          /* may be NULL; called before destroy */
     void (*destroy)(void *audio);       /* called once, after the metronomes are gone; may be NULL */
     uint32_t (*output_latency)(void *audio);   /* frames between a block being handed over and heard; may be NULL (0) */
-    int (*is_shutdown)(void *audio);    /* 1 when the backend has stopped (a JACK server that is gone); may be NULL (0) */
+    int (*is_shutdown)(void *audio);    /* 1 when the backend has stopped (a server that is gone); may be NULL (0) */
+    void (*attach)(void *audio, KlickEngine *engine);   /* called once when the engine is built, before the stream opens: the backend may give it an extension (klick_engine_extension.hh); may be NULL */
 } KlickBackend;
 
 /* Creates an engine on a backend. Returns NULL and writes to 'error' on failure; the backend is destroyed in that case too, so
@@ -117,6 +118,11 @@ int klick_engine_set_countin(KlickEngine *, int32_t bars, int32_t beats_per_bar,
 
 int klick_engine_start(KlickEngine *, KlickMode mode, char *error, size_t error_size);
 void klick_engine_stop(KlickEngine *);
+
+/* An extension of the engine (klick_engine_extension.hh) can make what starts wait for a signal of its own instead of playing at
+ * once. 'start_is_gated' is what the next start will do; 'run_is_gated' is what the one that plays now does (0 when stopped). */
+int klick_engine_start_is_gated(const KlickEngine *);
+int klick_engine_run_is_gated(const KlickEngine *);
 /* 1 while something plays; a tempo map that has reached its end is no longer playing. */
 int klick_engine_is_playing(const KlickEngine *);
 
@@ -145,21 +151,6 @@ uint64_t klick_engine_lost_beats(const KlickEngine *);
 /* Offline engines: renders 'frames' mono frames into 'out'. */
 void klick_engine_render(KlickEngine *, float *out, uint32_t frames);
 
-/* Follow the transport of the backend, for a tempo map (the simple metronome has no transport): the map plays while the transport
- * rolls, at the position the transport has (what klick does with --accompany-transport), and goes on until the engine is stopped,
- * since the end of the map is not the end of the song. There is no count-in then. Only a backend that has a transport (JACK) has
- * an effect; read when the map starts (klick_engine_start). Off by default. */
-void klick_engine_set_transport_follow(KlickEngine *, int follow);
-
-/* Be the timebase master of the transport (bars, beats and tempo for the other clients), replacing the one there is; 0 gives it up.
- * Returns 0 (with a message) when the backend has no transport or the master cannot be taken. */
-int klick_engine_set_timebase_master(KlickEngine *, int on, char * error, size_t error_size);
-
-/* What the transport does to the engine, for the display: state 0 not following (or stopped), 1 waiting for the transport to roll,
- * 2 rolling; external is 1 when another client is the timebase master, with its tempo (quarter notes per minute) and meter, which the
- * simple metronome takes (a tempo map keeps its own). */
-typedef struct KlickTransportInfo { int32_t state; int32_t external; float tempo; int32_t beats; int32_t denom; } KlickTransportInfo;
-void klick_engine_transport_info(KlickEngine const *, KlickTransportInfo * info);
 
 /* Delivery diagnostics of the output device since the engine was created (0 for offline engines). */
 uint32_t klick_engine_dropouts(const KlickEngine *);
