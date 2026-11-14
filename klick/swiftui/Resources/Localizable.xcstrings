@@ -6655,7 +6655,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tempo e metro del master timebase JACK: %lld BPM, %lld/%lld"
+            "value": "Tempo e misura del master timebase JACK: %lld BPM, %lld/%lld"
           }
         },
         "es": {
@@ -6671,25 +6671,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Another JACK client is the timebase master: the map keeps its own tempo, which may differ from its."
+            "value": "Another JACK client is the timebase master: the map keeps its own tempo, which may differ from the master's."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein anderer JACK-Client ist Timebase-Master: Die Karte behält ihr eigenes Tempo, das vom dortigen abweichen kann."
+            "value": "Ein anderer JACK-Client ist Timebase-Master: Die Karte behält ihr eigenes Tempo, das vom Tempo des Masters abweichen kann."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un altro client JACK è master timebase: la mappa mantiene il proprio tempo, che può differire dal suo."
+            "value": "Un altro client JACK è master timebase: la mappa mantiene il proprio tempo, che può differire da quello del master."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Otro cliente JACK es maestro de timebase: el mapa conserva su propio tempo, que puede diferir del suyo."
+            "value": "Otro cliente JACK es maestro de timebase: el mapa conserva su propio tempo, que puede diferir del del maestro."
           }
         }
       }
