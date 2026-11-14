@@ -58,6 +58,8 @@ public final class KlickApplication {
         if firstLaunch, let first = ExampleMap.all.first { try? model.openExample(first, in: KlickResources.examplesDirectory) }
         model.errorMessage = failure
         #if DEBUG
+        // Development aid: KLICK_BACKEND=jack plays on that backend from the start (with KLICK_FRESH=1 nothing is kept).
+        if let id = ProcessInfo.processInfo.environment["KLICK_BACKEND"] { model.switchBackend(to: id) }
         // Development aids: KLICK_METER=5/8 and KLICK_PATTERN=X.xxx set the meter and the pattern of the run.
         if let meter = ProcessInfo.processInfo.environment["KLICK_METER"]?.split(separator: "/").compactMap({ Int($0) }), meter.count == 2 {
             model.settings.setDenominator(meter[1]); model.settings.setBeats(meter[0])

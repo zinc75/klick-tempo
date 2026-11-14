@@ -1290,18 +1290,18 @@
         }
       }
     },
-    "Ce que la sortie dit : les lampes en tiennent compte.": {
+    "Ce que la sortie dit : les voyants en tiennent compte.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What the output reports: the lights take it into account."
+            "value": "What the output reports: the beat lights take it into account."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Was die Ausgabe meldet: Die Lampen berücksichtigen es."
+            "value": "Was die Ausgabe meldet: Die Leuchtanzeigen berücksichtigen es."
           }
         },
         "it": {
@@ -1313,7 +1313,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lo que dice la salida: las luces lo tienen en cuenta."
+            "value": "Lo que dice la salida: los indicadores lo tienen en cuenta."
           }
         }
       }
@@ -1346,18 +1346,18 @@
         }
       }
     },
-    "Certaines sorties, le Bluetooth surtout, retardent le son plus qu'elles ne le disent : les lampes s'allument alors avant le clic. Le décalage est gardé pour chaque sortie.": {
+    "Certaines sorties, le Bluetooth surtout, retardent le son plus qu'elles ne le disent : les voyants s'allument alors avant le clic. Le décalage est gardé pour chaque sortie.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Some outputs, Bluetooth especially, delay the sound more than they say: the lights then come on before the click. The offset is kept for each output."
+            "value": "Some outputs, Bluetooth especially, delay the sound more than they say: the beat lights then come on before the click. The offset is kept for each output."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Manche Ausgaben, vor allem Bluetooth, verzögern den Klang stärker als gemeldet: Die Lampen leuchten dann vor dem Klick auf. Der Versatz wird für jede Ausgabe gemerkt."
+            "value": "Manche Ausgaben, vor allem Bluetooth, verzögern den Klang stärker als gemeldet: Die Leuchtanzeigen leuchten dann vor dem Klick auf. Der Versatz wird für jede Ausgabe gemerkt."
           }
         },
         "it": {
@@ -1369,7 +1369,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Algunas salidas, sobre todo Bluetooth, retrasan el sonido más de lo que dicen: las luces se encienden entonces antes del clic. El desfase se guarda para cada salida."
+            "value": "Algunas salidas, sobre todo Bluetooth, retrasan el sonido más de lo que dicen: los indicadores se encienden entonces antes del clic. El desfase se guarda para cada salida."
           }
         }
       }
@@ -3110,46 +3110,18 @@
         }
       }
     },
-    "Lampes": {
+    "Lancez le métronome et avancez le curseur jusqu'à ce que le voyant s'allume avec le clic.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lights"
+            "value": "Start the metronome and move the slider until the beat light comes on with the click."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lampen"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spie"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Luces"
-          }
-        }
-      }
-    },
-    "Lancez le métronome et avancez le curseur jusqu'à ce que la lampe s'allume avec le clic.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start the metronome and move the slider until the light comes on with the click."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Das Metronom starten und den Regler verschieben, bis die Lampe mit dem Klick aufleuchtet."
+            "value": "Das Metronom starten und den Regler verschieben, bis die Leuchtanzeige mit dem Klick aufleuchtet."
           }
         },
         "it": {
@@ -3161,7 +3133,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Arranca el metrónomo y mueve el control hasta que la luz se encienda con el clic."
+            "value": "Arranca el metrónomo y mueve el control hasta que el indicador se encienda con el clic."
           }
         }
       }
@@ -4062,30 +4034,30 @@
         }
       }
     },
-    "Où va le son du métronome, et comment les lampes se calent sur lui.": {
+    "Où va le son du métronome, et comment les voyants lumineux se calent sur lui.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Where the metronome sound goes, and how the lights keep in step with it."
+            "value": "Where the metronome sound goes, and how the beat lights keep in step with it."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wohin der Klang des Metronoms geht und wie sich die Lampen auf ihn abstimmen."
+            "value": "Wohin der Klang des Metronoms geht und wie sich die Leuchtanzeigen auf ihn abstimmen."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dove va il suono del metronomo e come le spie si sincronizzano con esso."
+            "value": "Dove va il suono del metronomo e come le spie luminose si sincronizzano con esso."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adónde va el sonido del metrónomo y cómo se sincronizan las luces con él."
+            "value": "Adónde va el sonido del metrónomo y cómo se sincronizan los indicadores luminosos con él."
           }
         }
       }
@@ -4790,18 +4762,18 @@
         }
       }
     },
-    "Silencieux : seulement les lampes (⌥⌘M)": {
+    "Silencieux : seulement les voyants (⌥⌘M)": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Silent: only the lights (⌥⌘M)"
+            "value": "Silent: only the beat lights (⌥⌘M)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stumm: nur die Lampen (⌥⌘M)"
+            "value": "Stumm: nur die Leuchtanzeigen (⌥⌘M)"
           }
         },
         "it": {
@@ -4813,7 +4785,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Silencioso: solo las luces (⌥⌘M)"
+            "value": "Silencioso: solo los indicadores (⌥⌘M)"
           }
         }
       }
@@ -5906,6 +5878,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Volumen de los demás pulsos"
+          }
+        }
+      }
+    },
+    "Voyants lumineux": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beat lights"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leuchtanzeigen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spie luminose"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indicadores luminosos"
           }
         }
       }

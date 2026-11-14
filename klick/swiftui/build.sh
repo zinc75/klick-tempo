@@ -12,17 +12,28 @@
 # ../build_universal.sh and the libraries of ../../libs). It needs Xcode (swift 6, actool). DEVELOPER_DIR is set for this script
 # only: the global xcode-select setting is not changed. Signing with a Developer ID, notarisation and the installer are not part
 # of this script.
+#
+# Another application of the family that builds on the same core (the version of the collection, with JACK) uses this script too,
+# with environment variables: KLICK_PACKAGE_DIR (the Swift package to build, default this one), KLICK_APP_NAME, KLICK_EXECUTABLE (the program in the bundle),
+# KLICK_PRODUCT (the executable product of the package that becomes it, default the same name),
+# KLICK_BUNDLE_ID, KLICK_OUT (where the bundle is made, default ./build), KLICK_VERSION_DIR (holds VERSION and REVISION, default this
+# folder), KLICK_EXTRA_CATALOGS (more string catalogs, merged with the one of the core) and KLICK_NOTICE (a text added to SOURCE.txt).
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
 cd "$here"
 
-APP_NAME="Klick"
-EXECUTABLE="Klick"
-BUNDLE_ID="io.github.zinc75.jackappscollection.klick"
-VERSION=$(cat VERSION 2>/dev/null || echo "0.0.0")
+PACKAGE="${KLICK_PACKAGE_DIR:-$here}"
+APP_NAME="${KLICK_APP_NAME:-Klick}"
+EXECUTABLE="${KLICK_EXECUTABLE:-Klick}"
+PRODUCT="${KLICK_PRODUCT:-$EXECUTABLE}"
+BUNDLE_ID="${KLICK_BUNDLE_ID:-io.github.zinc75.jackappscollection.klick}"
+VERSION_DIR="${KLICK_VERSION_DIR:-$here}"
+EXTRA_CATALOGS="${KLICK_EXTRA_CATALOGS:-}"
+NOTICE="${KLICK_NOTICE:-}"
+VERSION=$(cat "$VERSION_DIR/VERSION" 2>/dev/null || echo "0.0.0")
 # VERSION is the version of klick; REVISION counts the releases of the macOS edition for that version.
-REVISION=$(cat REVISION 2>/dev/null || echo "0")
+REVISION=$(cat "$VERSION_DIR/REVISION" 2>/dev/null || echo "0")
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 [ -d "$DEVELOPER_DIR" ] || { echo "error: Xcode not found at $DEVELOPER_DIR (set DEVELOPER_DIR)" >&2; exit 1; }
 [ -f "$here/../build/libklickengine.a" ] || { echo "error: ../build/libklickengine.a is missing, run ../engine/build_engine.sh first" >&2; exit 1; }
@@ -32,22 +43,30 @@ if [ "${1:-}" = "--debug" ]; then
 else
   CONFIG=release; ARCHS=(--arch arm64 --arch x86_64); LABEL="release, universal"
 fi
-OUT="$here/build"
+OUT="${KLICK_OUT:-$here/build}"
+mkdir -p "$OUT"
 APP="$OUT/$APP_NAME.app"
 
 echo "[1/5] Compiling ($LABEL)"
-swift build -c "$CONFIG" ${ARCHS[@]+"${ARCHS[@]}"} 2>&1 | grep -v -E '^([0-9]+%:|\[[0-9]+/[0-9]+\]|Building for|Compiling|Write|Emitting|Linking|Applying)' || true
-BIN=$(swift build -c "$CONFIG" ${ARCHS[@]+"${ARCHS[@]}"} --show-bin-path)
-[ -x "$BIN/$EXECUTABLE" ] || { echo "error: $BIN/$EXECUTABLE was not built" >&2; exit 1; }
+(cd "$PACKAGE" && swift build -c "$CONFIG" ${ARCHS[@]+"${ARCHS[@]}"} 2>&1 | grep -v -E '^([0-9]+%:|\[[0-9]+/[0-9]+\]|Building for|Compiling|Write|Emitting|Linking|Applying)') || true
+BIN=$(cd "$PACKAGE" && swift build -c "$CONFIG" ${ARCHS[@]+"${ARCHS[@]}"} --show-bin-path)
+[ -x "$BIN/$PRODUCT" ] || { echo "error: $BIN/$PRODUCT was not built" >&2; exit 1; }
 
 echo "[2/5] Assembling the bundle"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Helpers"
-cp "$BIN/$EXECUTABLE" "$APP/Contents/MacOS/$EXECUTABLE"
+cp "$BIN/$PRODUCT" "$APP/Contents/MacOS/$EXECUTABLE"
+# The resource bundles of the packages (MatrixKit: the picto of JackMoebius).
+for resource_bundle in "$BIN"/*.bundle; do
+  [ -d "$resource_bundle" ] && cp -R "$resource_bundle" "$APP/Contents/Resources/"
+done
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION.$REVISION" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $EXECUTABLE" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleName $APP_NAME" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $APP_NAME" "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 # The sounds of klick (the interface plays them with its own copy of the engine), and the example maps.
 SAMPLES="$here/../build/samples"
@@ -61,11 +80,18 @@ mkdir -p "$APP/Contents/Resources/Examples"
 cp Examples/*.klick "$APP/Contents/Resources/Examples/"
 
 echo "[3/5] Compiling the localisations (Localizable.xcstrings to .lproj)"
-python3 -I - Resources/Localizable.xcstrings "$APP/Contents/Resources" <<'PY'
+# The catalog of the core, and the others given by KLICK_EXTRA_CATALOGS: one text may not have two different translations.
+python3 -I - "$APP/Contents/Resources" Resources/Localizable.xcstrings $EXTRA_CATALOGS <<'PY'
 import json, pathlib, sys
-catalog = json.loads(pathlib.Path(sys.argv[1]).read_text())
-out = pathlib.Path(sys.argv[2])
-strings = catalog.get("strings", {})
+out = pathlib.Path(sys.argv[1])
+catalog = json.loads(pathlib.Path(sys.argv[2]).read_text())
+strings = dict(catalog.get("strings", {}))
+for extra in sys.argv[3:]:
+    more = json.loads(pathlib.Path(extra).read_text())
+    assert more.get("sourceLanguage", "fr") == catalog.get("sourceLanguage", "fr"), extra + ": another source language"
+    for key, entry in more.get("strings", {}).items():
+        assert key not in strings or strings[key] == entry, extra + ": a different translation of: " + key
+        strings[key] = entry
 langs = {catalog.get("sourceLanguage", "fr")}
 for entry in strings.values():
     langs.update(entry.get("localizations", {}).keys())
@@ -100,11 +126,13 @@ fi
 
 echo "      licence texts"
 # The GPL of klick, the licences of the libraries linked statically into the engine, and where the source is.
-python3 -I - "$here/.." "$APP/Contents/Resources/Licenses" <<'PY'
+python3 -I - "$here/.." "$APP/Contents/Resources/Licenses" "$APP_NAME" "$NOTICE" <<'PY'
 import pathlib, re, shutil, sys
 tool = pathlib.Path(sys.argv[1]).resolve()
 libs = tool.parent / "libs"
 out = pathlib.Path(sys.argv[2]); out.mkdir(parents=True, exist_ok=True)
+app_name = sys.argv[3]
+notice = pathlib.Path(sys.argv[4]).read_text(encoding="utf-8") if sys.argv[4] else ""
 REPO = "https://github.com/zinc75/jack-apps-collection-macos"
 UPSTREAM = "https://github.com/dsacre/klick"
 
@@ -137,12 +165,12 @@ for folder, name, licence, files in LIBS:
 (out / "THIRD-PARTY-LICENSES.txt").write_text("".join(parts), encoding="utf-8")
 
 (out / "SOURCE.txt").write_text(
-    "Klick, macOS Edition\n\n"
+    f"{app_name}, macOS Edition\n\n"
     "This program is free software, under the GNU General Public License, version 2 or (at your option) any later\n"
     "version. The licence is in klick-COPYING.txt.\n\n"
     f"Source code of this edition (patches, engine, build scripts, SwiftUI application and libraries): {REPO}\n"
     f"klick as published by Dominic Sacré: {UPSTREAM}\n"
-    "The libraries linked statically into the engine are listed in THIRD-PARTY-LICENSES.txt.\n", encoding="utf-8")
+    "The libraries linked statically into the engine are listed in THIRD-PARTY-LICENSES.txt.\n" + notice, encoding="utf-8")
 PY
 
 echo "[5/5] Ad hoc signature"

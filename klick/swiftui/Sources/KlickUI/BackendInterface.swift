@@ -87,7 +87,7 @@ private struct CoreAudioSections: View {
                 Text(verbatim: kHz(model.output.sampleRate))
             }
             Divider()
-            OutputRow(title: "Latence annoncée", detail: Text("Ce que la sortie dit : les lampes en tiennent compte.")) {
+            OutputRow(title: "Latence annoncée", detail: Text("Ce que la sortie dit : les voyants en tiennent compte.")) {
                 Text(verbatim: milliseconds(model.output.latencyMilliseconds))
             }
             Divider()

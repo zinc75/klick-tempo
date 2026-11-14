@@ -17,7 +17,7 @@ struct OutputPage: View {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Sortie").font(.title2).fontWeight(.semibold)
-                    Text("Où va le son du métronome, et comment les lampes se calent sur lui.").foregroundStyle(.secondary)
+                    Text("Où va le son du métronome, et comment les voyants lumineux se calent sur lui.").foregroundStyle(.secondary)
                 }
                 .padding(.top, 8)
 
@@ -43,17 +43,17 @@ struct OutputPage: View {
 
                 interface.outputSections(model: model)
 
-                GroupTitle("Lampes")
+                GroupTitle("Voyants lumineux")
                 VStack(spacing: 0) {
                     OffsetRow()
                     Divider()
-                    OutputRow(title: "Régler à l'oreille", detail: Text("Lancez le métronome et avancez le curseur jusqu'à ce que la lampe s'allume avec le clic.")) {
+                    OutputRow(title: "Régler à l'oreille", detail: Text("Lancez le métronome et avancez le curseur jusqu'à ce que le voyant s'allume avec le clic.")) {
                         OffsetLamp()
                         Button(LocalizedStringKey(model.isPlaying ? "Arrêter" : "Jouer")) { model.togglePlayback() }.controlSize(.small)
                     }
                 }
                 .groupBox()
-                Text("Certaines sorties, le Bluetooth surtout, retardent le son plus qu'elles ne le disent : les lampes s'allument alors avant le clic. Le décalage est gardé pour chaque sortie.")
+                Text("Certaines sorties, le Bluetooth surtout, retardent le son plus qu'elles ne le disent : les voyants s'allument alors avant le clic. Le décalage est gardé pour chaque sortie.")
                     .font(.caption).foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 26)
