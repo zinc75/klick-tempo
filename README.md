@@ -21,7 +21,7 @@
 
 A metronome that does what a practice session needs: a steady click, a tempo you can tap, a speed trainer, and tempo maps that follow a whole piece with its changes of meter and tempo. It plays on the output of your Mac, with the click engine of `klick`, built here for macOS and embedded in the application.
 
-Klick Tempo is an unofficial interface. It does not need JACK. A version with JACK support, which also installs the `klick` command-line program, is part of [Jack Apps Collection for macOS](https://github.com/zinc75/jack-apps-collection-macos/tree/main/klick-jack).
+Klick Tempo is an unofficial interface. It does not need JACK. A version with JACK support, which also installs the `klick` command-line program, is part of [Jack Apps Collection for macOS](https://github.com/zinc75/jack-apps-collection-macos/tree/main/klick).
 
 ## Install
 
