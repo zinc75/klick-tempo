@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Licence of the program this interface drives (klick).
 #
-# Builds "Klick.app": the SwiftUI interface of klick, with its own copy of the engine.
+# Builds "Klick Tempo.app": the SwiftUI interface of klick, with its own copy of the engine.
 #
 #   ./build.sh            Release: universal (arm64 + x86_64), ad hoc signature
 #   ./build.sh --debug    Debug: native architecture only, faster
@@ -17,18 +17,19 @@
 # with environment variables: KLICK_PACKAGE_DIR (the Swift package to build, default this one), KLICK_APP_NAME, KLICK_EXECUTABLE (the program in the bundle),
 # KLICK_PRODUCT (the executable product of the package that becomes it, default the same name),
 # KLICK_BUNDLE_ID, KLICK_OUT (where the bundle is made, default ./build), KLICK_VERSION_DIR (holds VERSION and REVISION, default this
-# folder), KLICK_EXTRA_CATALOGS (more string catalogs, merged with the one of the core) and KLICK_NOTICE (a text added to SOURCE.txt).
+# folder), KLICK_ASSETS (the asset catalogue with the AppIcon, default Resources/Assets.xcassets), KLICK_HELPER (the klick program to embed in Contents/Helpers, default none: Klick Tempo has no JACK), KLICK_EXTRA_CATALOGS (more string catalogs, merged with the one of the core) and KLICK_NOTICE (a text added to SOURCE.txt).
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
 cd "$here"
 
 PACKAGE="${KLICK_PACKAGE_DIR:-$here}"
-APP_NAME="${KLICK_APP_NAME:-Klick}"
-EXECUTABLE="${KLICK_EXECUTABLE:-Klick}"
+APP_NAME="${KLICK_APP_NAME:-Klick Tempo}"
+EXECUTABLE="${KLICK_EXECUTABLE:-KlickTempo}"
 PRODUCT="${KLICK_PRODUCT:-$EXECUTABLE}"
-BUNDLE_ID="${KLICK_BUNDLE_ID:-io.github.zinc75.jackappscollection.klick}"
+BUNDLE_ID="${KLICK_BUNDLE_ID:-io.github.zinc75.klicktempo}"
 VERSION_DIR="${KLICK_VERSION_DIR:-$here}"
+ASSETS="${KLICK_ASSETS:-$here/Resources/Assets.xcassets}"
 EXTRA_CATALOGS="${KLICK_EXTRA_CATALOGS:-}"
 NOTICE="${KLICK_NOTICE:-}"
 VERSION=$(cat "$VERSION_DIR/VERSION" 2>/dev/null || echo "0.0.0")
@@ -107,21 +108,21 @@ for lang in sorted(langs):
 PY
 
 echo "[4/5] Icon, helper and licences"
-if [ -d Resources/Assets.xcassets ]; then
+if [ -d "$ASSETS" ]; then
   tmp=$(mktemp -d)
-  xcrun actool Resources/Assets.xcassets --compile "$APP/Contents/Resources" --platform macosx \
+  xcrun actool "$ASSETS" --compile "$APP/Contents/Resources" --platform macosx \
     --minimum-deployment-target 15.0 --app-icon AppIcon --output-partial-info-plist "$tmp/partial.plist" >/dev/null
   rm -rf "$tmp"
 else
-  echo "      no Assets.xcassets: the application has no icon"
+  echo "      no asset catalogue ($ASSETS): the application has no icon"
 fi
-HELPER="$here/../build/klick"
-if [ -x "$HELPER" ]; then
+HELPER="${KLICK_HELPER:-}"
+if [ -n "$HELPER" ] && [ -x "$HELPER" ]; then
   cp "$HELPER" "$APP/Contents/Helpers/klick"
   echo "      klick copied to Contents/Helpers"
 else
   rmdir "$APP/Contents/Helpers"
-  echo "      no ../build/klick: run ../build_universal.sh first to embed the program"
+  echo "      no program embedded (KLICK_HELPER)"
 fi
 
 echo "      licence texts"

@@ -95,6 +95,12 @@ struct ContentView: View {
             model.start(model.mode)
         }
         .task {
+            // Development aid: KLICK_LIVE=1 opens the simplified view once the window is up, also while only waiting for the transport.
+            guard ProcessInfo.processInfo.environment["KLICK_LIVE"] != nil else { return }
+            try? await Task.sleep(for: .milliseconds(3500))
+            model.enterLiveView()
+        }
+        .task {
             // A development run started from a Terminal in the background must still look active (accent colour, focus).
             NSApp.activate(ignoringOtherApps: true)
         }

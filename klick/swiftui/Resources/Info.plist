@@ -5,10 +5,10 @@
 	<key>CFBundleDevelopmentRegion</key><string>fr</string>
 	<key>CFBundleLocalizations</key>
 	<array><string>fr</string><string>en</string><string>de</string><string>it</string><string>es</string></array>
-	<key>CFBundleExecutable</key><string>Klick</string>
-	<key>CFBundleIdentifier</key><string>io.github.zinc75.jackappscollection.klick</string>
-	<key>CFBundleName</key><string>Klick</string>
-	<key>CFBundleDisplayName</key><string>Klick</string>
+	<key>CFBundleExecutable</key><string>KlickTempo</string>
+	<key>CFBundleIdentifier</key><string>io.github.zinc75.klicktempo</string>
+	<key>CFBundleName</key><string>Klick Tempo</string>
+	<key>CFBundleDisplayName</key><string>Klick Tempo</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
 	<key>CFBundleShortVersionString</key><string>0.0.0</string>
 	<key>CFBundleVersion</key><string>0</string>

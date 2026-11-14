@@ -19,7 +19,7 @@ let package = Package(
         .library(name: "KlickKit", targets: ["KlickKit"]),
         .library(name: "KlickEngine", targets: ["KlickEngine"]),
         .library(name: "CKlickEngine", targets: ["CKlickEngine"]),
-        .executable(name: "Klick", targets: ["Klick"]),
+        .executable(name: "KlickTempo", targets: ["KlickTempo"]),
     ],
     dependencies: [
         // Look and feel shared with the other tools (glass blocks, window fill), MIT.
@@ -48,8 +48,8 @@ let package = Package(
         // the equivalent command line. Unit tested.
         .target(name: "KlickKit", dependencies: ["KlickEngine"]),
         .testTarget(name: "KlickKitTests", dependencies: ["KlickKit"]),
-        // The window, the pages and the menus of the application, shared by the applications of the family (Klick, and the version of
-        // the collection that has JACK). As in JackMate, UI code is main-actor isolated by default.
+        // The window, the pages and the menus of the application, shared by the applications of the family (Klick Tempo, and Klick of
+        // the collection, which has JACK). As in JackMate, UI code is main-actor isolated by default.
         .target(
             name: "KlickUI",
             dependencies: [
@@ -61,7 +61,7 @@ let package = Package(
         ),
         // The application: its name, its colour and the backends it offers; nothing else.
         .executableTarget(
-            name: "Klick",
+            name: "KlickTempo",
             dependencies: ["KlickUI", .product(name: "AppearanceKit", package: "AppearanceKit")]
         ),
     ]
