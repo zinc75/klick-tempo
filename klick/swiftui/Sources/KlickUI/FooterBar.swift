@@ -38,6 +38,7 @@ struct ModePicker: View {
 /// The footer of the map and settings pages: what the button will play, the button, and the command line.
 struct FooterBar: View {
     @Environment(AppModel.self) private var model
+    @Environment(KlickApplication.self) private var application
     @State private var showsCommand = false
 
     /// What the footer talks about: what plays, or, stopped, what the button would play.
@@ -75,7 +76,9 @@ struct FooterBar: View {
             GoButton()
 
             HStack {
-                Button("Ligne de commande") { showsCommand = true }
+                if application.configuration.showsCommandLine {
+                    Button("Ligne de commande générée") { showsCommand = true }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
@@ -227,12 +230,17 @@ struct CommandSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Ligne de commande équivalente").font(.title3).fontWeight(.semibold)
             Text("Ce que Klick lance pour jouer ce métronome. Utilisable telle quelle dans le Terminal.").foregroundStyle(.secondary)
-            Text(verbatim: text)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            // The terminal view is dark in both appearances, with the colours of a shell.
+            ScrollView {
+                Text(CommandHighlighter.attributed(text))
+                    .font(.system(.body, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+            }
+            .frame(minHeight: 80, maxHeight: 280)
+            .background(Color(white: 0.11), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.primary.opacity(0.12), lineWidth: 0.5))
             HStack {
                 Button("Copier") {
                     NSPasteboard.general.clearContents()

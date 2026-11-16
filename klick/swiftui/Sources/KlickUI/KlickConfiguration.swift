@@ -28,8 +28,13 @@ public struct KlickConfiguration {
     public var accentColor: Color?
     /// CoreAudio is always offered, first; these come after it.
     public var additionalBackends: [BackendOffer]
+    /// Whether the window offers the command line of `klick`. Only for the application that installs the program: Klick Tempo
+    /// does not, so a command line would be of no use there.
+    public var showsCommandLine: Bool
 
-    public init(title: String, subtitle: String, accent: AccentChoice, accentColor: Color? = nil, additionalBackends: [BackendOffer] = []) {
+    public init(title: String, subtitle: String, accent: AccentChoice, accentColor: Color? = nil, additionalBackends: [BackendOffer] = [],
+                showsCommandLine: Bool = false) {
+        self.showsCommandLine = showsCommandLine
         self.title = title
         self.subtitle = subtitle
         self.accent = accent

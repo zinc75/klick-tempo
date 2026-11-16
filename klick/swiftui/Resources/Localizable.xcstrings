@@ -3418,30 +3418,30 @@
         }
       }
     },
-    "Ligne de commande": {
+    "Ligne de commande générée": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Command line"
+            "value": "Generated command line"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Befehlszeile"
+            "value": "Erzeugte Befehlszeile"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Riga di comando"
+            "value": "Riga di comando generata"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Línea de comandos"
+            "value": "Línea de comandos generada"
           }
         }
       }
