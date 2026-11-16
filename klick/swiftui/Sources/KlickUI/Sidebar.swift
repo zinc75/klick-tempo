@@ -23,6 +23,7 @@ struct Sidebar: View {
             }
         }
         .listStyle(.sidebar)
+        .inactiveSidebarFill()
     }
 
     private func row(_ title: LocalizedStringKey, _ symbol: String, _ page: Page) -> some View {

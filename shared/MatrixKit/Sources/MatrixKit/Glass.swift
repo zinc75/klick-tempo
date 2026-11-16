@@ -38,29 +38,88 @@ extension View {
 
 /// The look of a block. The glass is tinted a little in both modes (grey in light mode, where it is also given
 /// a hairline since it would otherwise vanish on a pale window; a little lighter in dark mode).
+///
+/// A window without the focus gets its Liquid Glass drawn flat by the system. Then (macOS 26 only) the block is a drawn
+/// look that keeps some relief: see `InactiveGlassFill`. The shadow of the glass is soft: 40 % of the one that a block of
+/// plain glass would cast, which looked heavy.
 public struct BlockBackground: ViewModifier {
     let cornerRadius: CGFloat
 
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.appearsActive) private var appearsActive
 
     public init(cornerRadius: CGFloat) { self.cornerRadius = cornerRadius }
 
     public func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius)
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         let light = scheme == .light
-        let shadowCaster = shape
-            .fill(Color.windowFill)
-            .shadow(color: .black.opacity(light ? 0.16 : 0.12), radius: light ? 5 : 4, y: 1)
         if #available(macOS 26, *), GlassSupport.enabled {
-            content
-                .glassEffect(.regular.tint(light ? Color.lightGlassTint : Color.darkGlassTint), in: shape)
-                .background { shadowCaster }
-                .overlay { if light { shape.strokeBorder(Color.black.opacity(0.10), lineWidth: 0.5) } }
+            if appearsActive {
+                let shadowCaster = shape
+                    .fill(Color.windowFill)
+                    .shadow(color: .black.opacity((light ? 0.16 : 0.12) * 0.4), radius: (light ? 5 : 4) * 0.4, y: 1)
+                content
+                    .glassEffect(.regular.tint(light ? Color.lightGlassTint : Color.darkGlassTint), in: shape)
+                    .background { shadowCaster }
+                    .overlay { if light { shape.strokeBorder(Color.black.opacity(0.10), lineWidth: 0.5) } }
+            } else {
+                content.background { InactiveGlassFill(shape: shape) }
+            }
         } else {
+            let shadowCaster = shape
+                .fill(Color.windowFill)
+                .shadow(color: .black.opacity(light ? 0.16 : 0.12), radius: light ? 5 : 4, y: 1)
             content
                 .background(.thickMaterial, in: shape)
                 .background { shadowCaster }
                 .overlay(shape.strokeBorder(light ? Color.black.opacity(0.10) : .white.opacity(0.10), lineWidth: 0.5))
+        }
+    }
+}
+
+/// What a glass surface looks like in a window without the focus, where the system draws Liquid Glass flat: the colour of the
+/// window, darkened by a gradient (a little in light mode, where the glass is tinted grey), and a lit edge. The same for the
+/// blocks and for the sidebar, so that they have the same tint.
+struct InactiveGlassFill<S: InsettableShape>: View {
+    let shape: S
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        if scheme == .dark {
+            ZStack {
+                shape.fill(Color.windowFill)
+                shape.fill(LinearGradient(colors: [.black.opacity(0.09), .black.opacity(0.126)], startPoint: .top, endPoint: .bottom))
+                shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.15), .white.opacity(0.04)], startPoint: .top, endPoint: .bottom), lineWidth: 0.75)
+            }
+        } else {
+            ZStack {
+                shape.fill(Color.windowFill)
+                shape.fill(LinearGradient(colors: [.black.opacity(0.02), .black.opacity(0.028)], startPoint: .top, endPoint: .bottom))
+                shape.strokeBorder(LinearGradient(colors: [.black.opacity(0.12), .black.opacity(0.05)], startPoint: .top, endPoint: .bottom), lineWidth: 0.75)
+            }
+        }
+    }
+}
+
+private struct SidebarFill: View {
+    @Environment(\.appearsActive) private var appearsActive
+
+    var body: some View {
+        if !appearsActive {
+            InactiveGlassFill(shape: RoundedRectangle(cornerRadius: 24, style: .continuous)).ignoresSafeArea()
+        }
+    }
+}
+
+extension View {
+    /// For the list of a sidebar: when the window has not the focus the sidebar, a glass panel that the system draws flat, gets the
+    /// drawn look of the blocks (macOS 26). The list is made transparent for it. Elsewhere the sidebar is left as the system draws it.
+    @ViewBuilder
+    public func inactiveSidebarFill() -> some View {
+        if #available(macOS 26, *), GlassSupport.enabled {
+            self.scrollContentBackground(.hidden).background { SidebarFill() }
+        } else {
+            self
         }
     }
 }
