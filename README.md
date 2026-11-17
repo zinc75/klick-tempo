@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="screenshots/icon.png" width="128" alt="Klick Tempo icon">
+  <img src="screenshots/icon.png" width="192" alt="Klick Tempo icon">
   <h1>Klick Tempo</h1>
   <p>A metronome for Mac with tempo maps, built on <code>klick</code> by Dominic Sacré.</p>
   <p>
