@@ -24,7 +24,7 @@ klick looks for its sounds in `/usr/local/share/klick/samples`, or in the direct
 | Author | Dominic Sacré |
 | Source | https://github.com/dsacre/klick |
 | Version | commit `c05071081165e2bab66fb839a128925cd361d939` (2015-03-29, branch `master`), `SConstruct` says 0.13.0-pre |
-| Copy here | `upstream/` = a `git clone` of the commit above with its `.git` removed (2026-11-04), **unmodified** |
+| Copy here | `upstream/` = a Git submodule of the repository above, at the commit above, **unmodified** (clone with `--recurse-submodules`) |
 
 ## Licence
 
@@ -50,7 +50,7 @@ Five patches in `patches/`, none of which changes what the `klick` program does 
 
 ## Layout
 
-- `upstream/`: the original sources, never edited (changes go to `patches/` or to new files).
+- `upstream/`: the original sources, a Git submodule of the official repository, never edited (changes go to `patches/` or to new files).
 - `patches/`: changes to the upstream sources, as unified diffs that apply with `git apply` from the `upstream/` directory.
 - `build_universal.sh`: builds the universal binary.
 - `engine/`: the engine as a library: a CoreAudio backend (`AudioInterfaceCoreAudio`), a C interface (`klick_engine.h`), `build_engine.sh`, and test programs with `build_tests.sh`.

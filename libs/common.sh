@@ -16,6 +16,8 @@
 # CFLAGS / LDFLAGS and Homebrew's pkg-config path are ignored on purpose.
 
 ub_setup() {  # $1 = upstream directory, $2 = output directory
+  # An upstream that is a git submodule is empty until the submodules are fetched.
+  [ -n "$(ls -A "$1" 2>/dev/null)" ] || { echo "error: $1 is empty: run 'git submodule update --init --recursive' at the root of the repository" >&2; return 1; }
   UB_SRC=$(cd "$1" && pwd)
   UB_PATCHES=$(dirname "$UB_SRC")/patches
   mkdir -p "$2"

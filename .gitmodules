@@ -1,0 +1,3 @@
+[submodule "klick/upstream"]
+	path = klick/upstream
+	url = https://github.com/dsacre/klick.git
