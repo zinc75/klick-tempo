@@ -25,7 +25,7 @@ Klick Tempo is an unofficial interface. It does not need JACK. A version with JA
 
 ## Install
 
-Download `KlickTempo-0.13.0-macOS.pkg` from the [Releases](https://github.com/zinc75/klick-tempo/releases) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs `Klick Tempo.app` in `/Applications`.
+Download `KlickTempo-0.13.0-macOS-2.pkg` from the [Releases](https://github.com/zinc75/klick-tempo/releases) page and open it. The package is signed and notarized by Apple, so it opens without any Gatekeeper warning. It installs `Klick Tempo.app` in `/Applications`.
 
 It needs macOS 15 or later. To build from source instead, see [`klick/swiftui/README.md`](klick/swiftui/README.md).
 
