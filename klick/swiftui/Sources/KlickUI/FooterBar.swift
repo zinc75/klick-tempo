@@ -84,7 +84,7 @@ struct FooterBar: View {
         }
         .sheet(isPresented: $showsCommand) { CommandSheet() }
         .padding(.horizontal, 24)
-        .frame(height: 88)
+        .frame(height: 98)
         .background(Color.windowFill)
         .overlay(alignment: .top) { Divider() }
     }
