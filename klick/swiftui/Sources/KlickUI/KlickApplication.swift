@@ -27,7 +27,7 @@ public final class KlickApplication {
 
     public init(configuration: KlickConfiguration) {
         self.configuration = configuration
-        NSWindow.allowsAutomaticWindowTabbing = false
+        CollectionMenus.disableSystemMenuAdditions()
         var failure: String?
         let engine: Engine
         do {

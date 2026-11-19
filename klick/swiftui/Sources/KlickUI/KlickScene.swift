@@ -45,7 +45,6 @@ public struct KlickScene: Scene {
             CommandGroup(replacing: .appSettings) {
                 Button("Réglages…") { model.show(.appearance) }.keyboardShortcut(",", modifiers: .command)
             }
-            CommandGroup(replacing: .help) {}
             CommandMenu("Lecture") {
                 Button(LocalizedStringKey(model.isPlaying ? "Arrêter" : "Démarrer")) { model.togglePlayback() }.keyboardShortcut("r", modifiers: .command)
                 Button(LocalizedStringKey(model.showsLiveView ? "Configuration" : "Vue simplifiée")) {
@@ -55,6 +54,11 @@ public struct KlickScene: Scene {
                 .disabled(!model.isPlaying)
                 Toggle("Silencieux", isOn: Binding(get: { model.settings.isQuiet }, set: { model.settings.isQuiet = $0 })).keyboardShortcut("m", modifiers: [.command, .option])
             }
+        }
+        .commands {
+            CollectionMenus(about: application.configuration.about, appearance: application.appearance,
+                            documentationTitle: application.configuration.documentationTitle,
+                            documentationURL: application.configuration.documentationURL)
         }
     }
 }

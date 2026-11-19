@@ -1654,6 +1654,34 @@
         }
       }
     },
+    "Code source": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source code"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quellcode"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codice sorgente"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Código fuente"
+          }
+        }
+      }
+    },
     "Configuration": {
       "localizations": {
         "en": {
@@ -1902,6 +1930,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dos valores distintos: aceleración o desaceleración gradual."
+          }
+        }
+      }
+    },
+    "Documentation Klick Tempo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klick Tempo Documentation"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentation zu Klick Tempo"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documentazione di Klick Tempo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documentación de Klick Tempo"
           }
         }
       }
@@ -2802,6 +2858,34 @@
         }
       }
     },
+    "Interface non officielle de klick, de Dominic Sacré.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unofficial interface for klick, by Dominic Sacré."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inoffizielle Oberfläche für klick von Dominic Sacré."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interfaccia non ufficiale di klick, di Dominic Sacré."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interfaz no oficial de klick, de Dominic Sacré."
+          }
+        }
+      }
+    },
     "Jouer": {
       "localizations": {
         "en": {
@@ -3414,6 +3498,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Los cambios no guardados se perderán."
+          }
+        }
+      }
+    },
+    "Licence": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licence"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lizenz"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenza"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencia"
+          }
+        }
+      }
+    },
+    "Licence GPL, version 2 ou ultérieure.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPL licence, version 2 or later."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPL-Lizenz, Version 2 oder später."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenza GPL, versione 2 o successiva."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencia GPL, versión 2 o posterior."
           }
         }
       }
@@ -4198,6 +4338,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Más pequeño: menos retardo, más riesgo de chasquidos. Klick usa el que usa la salida."
+          }
+        }
+      }
+    },
+    "Portage macOS et interface : Éric Bavu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS port and interface: Éric Bavu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS-Portierung und Oberfläche: Éric Bavu."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porting per macOS e interfaccia: Éric Bavu."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portado a macOS e interfaz: Éric Bavu."
           }
         }
       }
@@ -5178,6 +5346,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Origen"
+          }
+        }
+      }
+    },
+    "Soutenir ☕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support ☕"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unterstützen ☕"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sostieni ☕"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apoyar ☕"
           }
         }
       }
@@ -6326,6 +6522,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "variable"
+          }
+        }
+      }
+    },
+    "À propos de %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informazioni su %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acerca de %@"
           }
         }
       }

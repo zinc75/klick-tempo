@@ -4,10 +4,9 @@
 import SwiftUI
 import AppearanceKit
 
-/// Removes the menus that the system adds by itself and that have nothing left in them; makes the application a regular one when it is
-/// run from the build folder; applies the look the user chose.
+/// Makes the application a regular one when it is run from the build folder; applies the look the user chose. The menus are cleaned
+/// by `MenuPruner`.
 public final class KlickAppDelegate: NSObject, NSApplicationDelegate {
-    private var pending = false
     /// The look chosen by the user; given by the application before the first window, applied at launch.
     static var appearance: AppearanceSettings?
 
@@ -20,26 +19,5 @@ public final class KlickAppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         Self.appearance?.applyAppearance()
-        prune()
-        NotificationCenter.default.addObserver(forName: NSMenu.didAddItemNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.schedule()
-        }
-    }
-
-    private func schedule() {
-        guard !pending else { return }
-        pending = true
-        DispatchQueue.main.async { [self] in
-            pending = false
-            prune()
-        }
-    }
-
-    private func prune() {
-        guard let main = NSApp.mainMenu else { return }
-        for item in main.items.dropFirst() {
-            guard let submenu = item.submenu else { continue }
-            if submenu.items.allSatisfy({ $0.isSeparatorItem || $0.isHidden }) { main.removeItem(item) }
-        }
     }
 }
