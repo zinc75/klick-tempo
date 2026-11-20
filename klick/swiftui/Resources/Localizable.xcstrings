@@ -433,13 +433,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "32 Bit Gleitkomma"
+            "value": "32 Bit Float"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "32 bit a virgola mobile"
+            "value": "32 bit float"
           }
         },
         "es": {
@@ -601,13 +601,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Darstellung"
+            "value": "Anzeige"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aspetto"
+            "value": "Visualizzazione"
           }
         },
         "es": {
@@ -629,7 +629,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Im Finder zeigen"
+            "value": "Im Finder anzeigen"
           }
         },
         "it": {
