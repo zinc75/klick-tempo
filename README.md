@@ -68,7 +68,7 @@ Square, sine, noise and click sounds, with a pitch and a volume for the accent a
 </table>
 </div>
 
-The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations have not been reviewed by native speakers.
+The interface is in French, English, German, Italian and Spanish. The German, Italian and Spanish translations were written without a native speaker: corrections and new languages are welcome, as an issue or a pull request.
 
 ## Uninstall
 
