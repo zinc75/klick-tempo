@@ -8,11 +8,11 @@ Library for audio time-stretching and pitch-shifting (used by klick to change th
 |---|---|
 | Project | Rubber Band Library |
 | Author | Particular Programs Ltd (Chris Cannam) |
-| Source | https://breakfastquay.com/files/releases/rubberband-4.0.0.tar.bz2 |
-| Version | version 4.0.0 (archive downloaded 2026-11-04) |
-| Archive | `rubberband-4.0.0.tar.bz2` (not committed) |
-| SHA-256 | `af050313ee63bc18b35b2e064e5dce05b276aaf6d1aa2b8a82ced1fe2f8028e9`, identical to the value in the Homebrew formula |
-| Copy here | `upstream/` = the extracted archive, **unmodified**, except that the two CI workflow files of `.github/workflows` are not kept |
+| Source | https://github.com/breakfastquay/rubberband |
+| Version | version 4.0.0 (tag `v4.0.0`, commit `1d95888bec3ae0a17c0c4af791810d5a63f6bc35`) |
+| Copy here | `upstream/` = a Git submodule of the repository above, at the commit above, **unmodified** (clone with `--recurse-submodules`) |
+
+The release archive `rubberband-4.0.0.tar.bz2` (SHA-256 `af050313ee63bc18b35b2e064e5dce05b276aaf6d1aa2b8a82ced1fe2f8028e9`, identical to the value in the Homebrew formula) has the same files as the tag, except for a `.hg_archival.txt` that it carries and three deployment scripts of `otherbuilds/deploy/` that it does not. Nothing is generated at build time: the library is compiled from its single-file compilation unit.
 
 ## Licence
 
@@ -22,7 +22,7 @@ No external dependencies. The build here uses the single-file compilation unit (
 
 ## State on macOS
 
-- Universal static build (arm64 + x86_64) with `build_universal.sh`; the result goes to `libs/build/`, which is not committed (see `libs/common.sh`). The headers are in `include/rubberband/`.
+- Universal static build (arm64 + x86_64) with `build_universal.sh`; the result goes to `libs/build/`, which is not committed (see `libs/common.sh`). The headers are in `include/rubberband/`. The library is identical to the one built from the release archive, once stripped.
 
 
 ## Layout

@@ -8,11 +8,11 @@ Implementation of the Open Sound Control (OSC) protocol. Used by jack_capture fo
 |---|---|
 | Project | liblo |
 | Author | Steve Harris and contributors (see `AUTHORS`) |
-| Source | https://github.com/radarsat1/liblo/releases/download/0.36/liblo-0.36.tar.gz |
-| Version | version 0.36 (`NEWS`: released 2026-04-30; published on GitHub 2026-06-19; archive downloaded 2026-10-31) |
-| Archive | `liblo-0.36.tar.gz` (not committed) |
-| SHA-256 | `c08d14832e8dcf8f06840405824a4f9611a0cb3daed0198946326c740941c8b6`, identical to the digest GitHub publishes for this release asset. The release also carries a prebuilt `liblo.7.dylib`, which is not used |
-| Copy here | `upstream/` = the extracted archive, **unmodified** |
+| Source | https://github.com/radarsat1/liblo |
+| Version | version 0.36 (tag `0.36`, commit `025f277275e6b81032a72dfb0b131adab80363e6`; `NEWS`: released 2026-04-30, published on GitHub 2026-06-19) |
+| Copy here | `upstream/` = a Git submodule of the repository above, at the commit above, **unmodified** (clone with `--recurse-submodules`) |
+
+The release archive `liblo-0.36.tar.gz` (SHA-256 `c08d14832e8dcf8f06840405824a4f9611a0cb3daed0198946326c740941c8b6`, identical to the digest GitHub publishes for this release asset) has the same files as the tag, plus the ones that autotools generates (`configure`, `Makefile.in`, `ltmain.sh` ...). The release also carries a prebuilt `liblo.7.dylib`, which is not used. The build makes `configure` in a temporary copy.
 
 ## Licence
 
@@ -22,7 +22,7 @@ Dependencies: none (POSIX threads for the server thread).
 
 ## State on macOS
 
-- Universal static build (arm64 + x86_64) with `build_universal.sh`; the result goes to `libs/build/`, which is not committed (see `libs/common.sh`).
+- Universal static build (arm64 + x86_64) with `build_universal.sh`; the result goes to `libs/build/`, which is not committed (see `libs/common.sh`). It needs autoconf, automake and libtool, to generate `configure` from the Git checkout. The library is identical to the one built from the release archive, once stripped.
 
 
 ## Layout

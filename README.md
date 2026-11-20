@@ -95,7 +95,7 @@ Klick Tempo is free and open source. If it saves you time, you can buy me a coff
 | Author | Dominic Sacré |
 | Source | https://github.com/dsacre/klick |
 | Version | commit `c05071081165e2bab66fb839a128925cd361d939` (2015-03-29, branch `master`), `SConstruct` says 0.13.0-pre |
-| Copy here | `klick/upstream/` = a `git clone` of the commit above with its `.git` removed, **unmodified** |
+| Copy here | `klick/upstream/` = a Git submodule of the repository above, at the commit above, **unmodified** (clone with `--recurse-submodules`) |
 
 ## Licence
 
@@ -113,5 +113,5 @@ Tested on macOS, on arm64 and on x86_64 (under Rosetta).
 - `klick/patches/`: changes to the upstream sources, as unified diffs.
 - `klick/engine/`: the engine as a library, with its C interface and its tests.
 - `klick/swiftui/`: the application, with its tests and build script.
-- `libs/`: the libraries built for it.
+- `libs/`: the libraries built for it, each a Git submodule at the tag of its release, with the script that builds it.
 - `screenshots/`: the images of this README.

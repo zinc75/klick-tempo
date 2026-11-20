@@ -13,7 +13,9 @@ MP3 encoder (`libmp3lame`) and the `lame` program.
 | Archive | `lame-4.0.tar.gz` (not committed) |
 | MD5 | `4b82945ffc410cb5d3947b9d6f890ae8`, identical to the value published by SourceForge for this file. The project publishes no SHA-256 and no signature |
 | SHA-256 | `3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb` (computed on the downloaded archive) |
-| Copy here | `upstream/` = the extracted archive, **unmodified** |
+| Copy here | `upstream/` = a Git submodule of [zinc75/lame-releases](https://github.com/zinc75/lame-releases), at tag `4.0` (commit `e3f49139c70de00923a37538fc46ac1883d21164`): the files of the archive above, **unmodified** (clone with `--recurse-submodules`) |
+
+That repository holds release snapshots, one commit per release; it is not a mirror of LAME, which is developed in Subversion on SourceForge and has no official Git repository. The release also has the archive as a file. The archive carries `configure`, so nothing is generated at build time.
 
 ## Licence
 

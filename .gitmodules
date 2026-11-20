@@ -1,3 +1,36 @@
 [submodule "klick/upstream"]
 	path = klick/upstream
 	url = https://github.com/dsacre/klick.git
+[submodule "libs/boost/upstream"]
+	path = libs/boost/upstream
+	url = https://github.com/zinc75/boost-subset.git
+[submodule "libs/flac/upstream"]
+	path = libs/flac/upstream
+	url = https://github.com/xiph/flac.git
+[submodule "libs/lame/upstream"]
+	path = libs/lame/upstream
+	url = https://github.com/zinc75/lame-releases.git
+[submodule "libs/liblo/upstream"]
+	path = libs/liblo/upstream
+	url = https://github.com/radarsat1/liblo.git
+[submodule "libs/libogg/upstream"]
+	path = libs/libogg/upstream
+	url = https://github.com/xiph/ogg.git
+[submodule "libs/libsamplerate/upstream"]
+	path = libs/libsamplerate/upstream
+	url = https://github.com/libsndfile/libsamplerate.git
+[submodule "libs/libsndfile/upstream"]
+	path = libs/libsndfile/upstream
+	url = https://github.com/libsndfile/libsndfile.git
+[submodule "libs/libvorbis/upstream"]
+	path = libs/libvorbis/upstream
+	url = https://github.com/xiph/vorbis.git
+[submodule "libs/mpg123/upstream"]
+	path = libs/mpg123/upstream
+	url = https://github.com/zinc75/mpg123-releases.git
+[submodule "libs/opus/upstream"]
+	path = libs/opus/upstream
+	url = https://github.com/xiph/opus.git
+[submodule "libs/rubberband/upstream"]
+	path = libs/rubberband/upstream
+	url = https://github.com/breakfastquay/rubberband.git
