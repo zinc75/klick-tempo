@@ -2,6 +2,34 @@
   "sourceLanguage": "fr",
   "version": "1.0",
   "strings": {
+    "révision": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revision"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "revision"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "revisión"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "revisione"
+          }
+        }
+      }
+    },
     "%@ s'est arrêté : Klick joue sur %@.": {
       "localizations": {
         "en": {

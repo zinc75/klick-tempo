@@ -65,6 +65,11 @@ done
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION.$REVISION" "$APP/Contents/Info.plist"
+# The revision of the package and the day it was built: the "About" window says them (the release is published the day it is built, or the next ones).
+/usr/libexec/PlistBuddy -c "Delete :JACRevision" "$APP/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :JACRevision string $REVISION" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Delete :JACBuildDate" "$APP/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :JACBuildDate string $(date +%Y-%m-%d)" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $EXECUTABLE" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleName $APP_NAME" "$APP/Contents/Info.plist"

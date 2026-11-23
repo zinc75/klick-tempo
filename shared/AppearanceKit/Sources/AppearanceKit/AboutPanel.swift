@@ -27,6 +27,21 @@ public struct AboutInfo {
     public var licenseFile: String?
     public var licenseURL: URL?
 
+    /// The version line with the revision of the package and the day it was built, when the bundle says them (`JACRevision` and `JACBuildDate`, written by
+    /// the build): "0.4.8 macOS Edition · révision 3 · 24 novembre 2026".
+    public var versionLine: String {
+        var parts = [version]
+        let bundle = Bundle.main
+        if let revision = bundle.object(forInfoDictionaryKey: "JACRevision") as? String, !revision.isEmpty {
+            parts.append(String(localized: "révision") + " " + revision)
+        }
+        if let text = bundle.object(forInfoDictionaryKey: "JACBuildDate") as? String,
+           let date = try? Date(text, strategy: .iso8601.year().month().day()) {
+            parts.append(date.formatted(date: .long, time: .omitted))
+        }
+        return parts.joined(separator: " · ")
+    }
+
     public init(name: String, version: String, summary: String, lines: [String] = [], copyright: String,
                 sourceURL: URL? = nil, supportURL: URL? = nil, licenseFile: String? = nil, licenseURL: URL? = nil) {
         self.name = name
@@ -115,7 +130,7 @@ private struct AboutContent: View {
                 Text(info.name)
                     .font(.system(size: 22, weight: .bold))
                     .padding(.bottom, 3)
-                Text(info.version)
+                Text(info.versionLine)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 if let collection = info.collection {
