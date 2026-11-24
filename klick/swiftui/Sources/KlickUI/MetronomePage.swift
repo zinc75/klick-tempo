@@ -269,7 +269,7 @@ private struct TrackpadPad: View {
             VStack(spacing: 2) {
                 Text(verbatim: tap.bpm.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "—")
                     .font(.system(size: 30, weight: .ultraLight)).monospacedDigit()
-                (tap.count == 0 ? Text("Tapez ici, ou touche T") : Text("\(tap.count) taps"))
+                (tap.count == 0 ? Text("Tapez ici, ou touche T") : tap.count == 1 ? Text("1 tap") : Text("\(tap.count) taps"))
                     .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
             .padding(.horizontal, 6)

@@ -679,7 +679,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add a section"
+            "value": "Add a Section"
           }
         },
         "de": {
@@ -753,7 +753,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apariencia"
+            "value": "Aspecto"
           }
         }
       }
@@ -791,7 +791,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apply the tempo"
+            "value": "Apply Tempo"
           }
         },
         "de": {
@@ -831,7 +831,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ferma"
+            "value": "Interrompi"
           }
         },
         "es": {
@@ -887,7 +887,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fermo"
+            "value": "Interrotto"
           }
         },
         "es": {
@@ -1043,7 +1043,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Other beats…"
+            "value": "Other Beats…"
           }
         },
         "de": {
@@ -1267,7 +1267,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tempo map"
+            "value": "Tempo Map"
           }
         },
         "de": {
@@ -1733,7 +1733,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Configuración"
+            "value": "Ajustes"
           }
         }
       }
@@ -1811,13 +1811,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Colore di risalto"
+            "value": "Colore dettagli"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Color de énfasis"
+            "value": "Color de contraste"
           }
         }
       }
@@ -1995,7 +1995,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "From the cursor"
+            "value": "From Cursor"
           }
         },
         "de": {
@@ -2023,7 +2023,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "From the start"
+            "value": "From Start"
           }
         },
         "de": {
@@ -2387,7 +2387,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Save the map"
+            "value": "Save Map"
           }
         },
         "de": {
@@ -2421,19 +2421,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Danach"
+            "value": "Nächste"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Poi"
+            "value": "Successivo"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Después"
+            "value": "Siguiente"
           }
         }
       }
@@ -2763,13 +2763,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Frequenza"
+            "value": "Frequenza di campionamento"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Frecuencia"
+            "value": "Frecuencia de muestreo"
           }
         }
       }
@@ -3463,13 +3463,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il tema della finestra e il colore di risalto."
+            "value": "Il tema della finestra e il colore dettagli."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El tema de la ventana y el color de énfasis."
+            "value": "El tema de la ventana y el color de contraste."
           }
         }
       }
@@ -3535,7 +3535,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Licence"
+            "value": "License"
           }
         },
         "de": {
@@ -3563,7 +3563,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "GPL licence, version 2 or later."
+            "value": "GPL license, version 2 or later."
           }
         },
         "de": {
@@ -3591,7 +3591,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Generated command line"
+            "value": "Generated Command Line"
           }
         },
         "de": {
@@ -3647,7 +3647,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Play from here"
+            "value": "Play from Here"
           }
         },
         "de": {
@@ -4207,7 +4207,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open a map…"
+            "value": "Open a Map…"
           }
         },
         "de": {
@@ -4751,13 +4751,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Impostazioni del suono"
+            "value": "Impostazioni suono"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajustes del sonido"
+            "value": "Ajustes de sonido"
           }
         }
       }
@@ -4767,19 +4767,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sound settings…"
+            "value": "Sound Settings…"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toneinstellungen …"
+            "value": "Klangeinstellungen …"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Impostazioni audio…"
+            "value": "Impostazioni suono…"
           }
         },
         "es": {
@@ -5367,13 +5367,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Origine"
+            "value": "Sorgente"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Origen"
+            "value": "Fuente"
           }
         }
       }
@@ -5551,7 +5551,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tap the tempo"
+            "value": "Tap Tempo"
           }
         },
         "de": {
@@ -6005,19 +6005,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Leeren"
+            "value": "Löschen"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Svuota"
+            "value": "Cancella"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vaciar"
+            "value": "Borrar"
           }
         }
       }
@@ -6033,19 +6033,19 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Karte leeren?"
+            "value": "Karte löschen?"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Svuotare la mappa?"
+            "value": "Cancellare la mappa?"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Vaciar el mapa?"
+            "value": "¿Borrar el mapa?"
           }
         }
       }
@@ -6061,7 +6061,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Violett"
+            "value": "Lila"
           }
         },
         "it": {
@@ -6699,7 +6699,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edit the section"
+            "value": "Edit Section"
           }
         },
         "de": {
@@ -6774,6 +6774,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Etiqueta"
+          }
+        }
+      }
+    },
+    "1 tap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 tap"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Tap"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 tocco"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 toque"
           }
         }
       }
