@@ -1,5 +1,10 @@
 <div align="center">
 
+  ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
+  ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
+  ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
+  [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
+
   <img src="screenshots/icon.png" width="192" alt="Klick Tempo icon">
   <h1>Klick Tempo</h1>
   <p>A metronome for Mac with tempo maps, built on <code>klick</code> by Dominic Sacré.</p>
@@ -7,11 +12,6 @@
     <img src="assets/notarized-badge.png" width="15" alt="">
     <strong>Signed &amp; notarized by Apple</strong>
   </p>
-
-  ![macOS](https://img.shields.io/badge/macOS-15.0%2B-lightgrey?logo=apple)
-  ![Architectures](https://img.shields.io/badge/arm64%20%7C%20x86__64-universal-blue)
-  ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
-  [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/zinc75)
 
   <img src="screenshots/live.png" width="760" alt="Klick Tempo playing at 120 BPM">
 
