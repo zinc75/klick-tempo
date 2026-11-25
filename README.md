@@ -87,7 +87,7 @@ The settings are in `~/Library/Preferences/io.github.zinc75.klicktempo.plist`; `
 
 Klick Tempo is free and open source. If it saves you time, you can buy me a coffee: it helps pay the Apple Developer account ($99 a year) that keeps the installers signed and notarized.
 
-[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=zinc75&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/zinc75)
+[![Buy me a coffee](assets/buymeacoffee-button.svg)](https://www.buymeacoffee.com/zinc75)
 
 ## Upstream
 
