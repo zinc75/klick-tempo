@@ -31,6 +31,8 @@ Download `KlickTempo-0.13.0-macOS-4.pkg` from the [Releases](https://github.com/
 
 It needs macOS 15 or later. To build from source instead, see [`klick/swiftui/README.md`](klick/swiftui/README.md).
 
+The application looks for a newer version once a day and offers to install it. The package is checked (checksum, signature and notarization) before it opens in the Installer. "Check for Updates…" in the application menu looks at once, and a box in the update panel turns the daily check off.
+
 ## The metronome
 
 Tempo from 30 to 260 BPM with a slider, buttons or the arrow keys, any meter, an accent or a silence on each beat, a count-in, and a speed trainer that raises the tempo by a step every few bars up to a target. Tap the tempo with a key or on the trackpad. A simplified view shows only the tempo, the beats and the notation while you play.
