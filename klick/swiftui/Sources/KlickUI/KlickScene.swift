@@ -4,6 +4,7 @@
 import SwiftUI
 import KlickKit
 import AppearanceKit
+import UpdateKit
 
 /// The window of the application and its menus. An application of the family is this scene and its configuration.
 public struct KlickScene: Scene {
@@ -55,6 +56,7 @@ public struct KlickScene: Scene {
                 Toggle("Silencieux", isOn: Binding(get: { model.settings.isQuiet }, set: { model.settings.isQuiet = $0 })).keyboardShortcut("m", modifiers: [.command, .option])
             }
         }
+        .commands { UpdateCommands(controller: application.updates) }
         .commands {
             CollectionMenus(about: application.configuration.about, appearance: application.appearance,
                             documentationTitle: application.configuration.documentationTitle,

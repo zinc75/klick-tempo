@@ -30,7 +30,8 @@ struct KlickTempoApp: App {
         let configuration = KlickConfiguration(title: "Klick Tempo", subtitle: "Metronome for macOS", about: about,
                                                documentationTitle: String(localized: "Documentation Klick Tempo"),
                                                documentationURL: URL(string: "https://github.com/zinc75/klick-tempo")!,
-                                               accent: .orange, accentColor: Color(red: 1.0, green: 0.42, blue: 0.10))
+                                               accent: .orange, accentColor: Color(red: 1.0, green: 0.42, blue: 0.10),
+                                               updateRepository: "zinc75/klick-tempo", updateTagPrefix: "klick-tempo-v")
         _application = State(initialValue: KlickApplication(configuration: configuration))
     }
 

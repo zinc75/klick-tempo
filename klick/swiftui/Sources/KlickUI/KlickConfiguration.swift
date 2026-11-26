@@ -35,9 +35,16 @@ public struct KlickConfiguration {
     /// Whether the window offers the command line of `klick`. Only for the application that installs the program: Klick Tempo
     /// does not, so a command line would be of no use there.
     public var showsCommandLine: Bool
+    /// Where the releases of the application are and what their tags begin with ("zinc75/klick-tempo", "klick-tempo-v"): with both, the
+    /// application looks for updates (see `UpdateKit`). Without them it does not.
+    public var updateRepository: String?
+    public var updateTagPrefix: String?
 
     public init(title: String, subtitle: String, about: AboutInfo, documentationTitle: String, documentationURL: URL,
-                accent: AccentChoice, accentColor: Color? = nil, additionalBackends: [BackendOffer] = [], showsCommandLine: Bool = false) {
+                accent: AccentChoice, accentColor: Color? = nil, additionalBackends: [BackendOffer] = [], showsCommandLine: Bool = false,
+                updateRepository: String? = nil, updateTagPrefix: String? = nil) {
+        self.updateRepository = updateRepository
+        self.updateTagPrefix = updateTagPrefix
         self.about = about
         self.documentationTitle = documentationTitle
         self.documentationURL = documentationURL

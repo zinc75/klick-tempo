@@ -26,6 +26,8 @@ let package = Package(
         .package(path: "../../shared/MatrixKit"),
         // The look (dark, system, light) and the accent, with the content of the settings window, MIT.
         .package(path: "../../shared/AppearanceKit"),
+        // Looks for a newer release on GitHub and opens its package in the Installer, MIT.
+        .package(path: "../../shared/UpdateKit"),
     ],
     targets: [
         // The C interface of the engine (klick_engine.h) and the link settings of its static library.
@@ -56,6 +58,7 @@ let package = Package(
                 "KlickKit", "KlickEngine",
                 .product(name: "MatrixKit", package: "MatrixKit"),
                 .product(name: "AppearanceKit", package: "AppearanceKit"),
+                .product(name: "UpdateKit", package: "UpdateKit"),
             ],
             swiftSettings: [.unsafeFlags(["-Xfrontend", "-default-isolation", "-Xfrontend", "MainActor"])]
         ),

@@ -6,6 +6,7 @@ import Observation
 import KlickEngine
 import KlickKit
 import AppearanceKit
+import UpdateKit
 
 /// What an application of the family holds while it runs: its configuration, the model of the window and the look the user chose.
 /// Made once, before the first window.
@@ -15,6 +16,8 @@ public final class KlickApplication {
     public let configuration: KlickConfiguration
     let model: AppModel
     let appearance: AppearanceSettings
+    /// The search for a newer release; nil for an application that has no releases to look at.
+    let updates: UpdateController?
 
     /// The settings of the last session come back; a development run can ask for a fresh start.
     private static var keepsSettings: Bool {
@@ -87,5 +90,16 @@ public final class KlickApplication {
         let appearance = AppearanceSettings(appAccent: configuration.accent, appColor: configuration.accentColor, defaults: defaults)
         KlickAppDelegate.appearance = appearance
         self.appearance = appearance
+
+        // An installation would stop the metronome: it waits until it is stopped.
+        if let repository = configuration.updateRepository, let prefix = configuration.updateTagPrefix {
+            let updates = UpdateController(
+                configuration: UpdateConfiguration(appName: configuration.title, repository: repository, tagPrefix: prefix, isBusy: { model.isPlaying }),
+                appearance: appearance)
+            self.updates = updates
+            updates.startAutomaticChecks()
+        } else {
+            self.updates = nil
+        }
     }
 }
