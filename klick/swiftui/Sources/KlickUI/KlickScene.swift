@@ -56,11 +56,12 @@ public struct KlickScene: Scene {
                 Toggle("Silencieux", isOn: Binding(get: { model.settings.isQuiet }, set: { model.settings.isQuiet = $0 })).keyboardShortcut("m", modifiers: [.command, .option])
             }
         }
-        .commands { UpdateCommands(controller: application.updates) }
         .commands {
             CollectionMenus(about: application.configuration.about, appearance: application.appearance,
                             documentationTitle: application.configuration.documentationTitle,
                             documentationURL: application.configuration.documentationURL)
+            // After the "About" group that the menus of the collection replace, so that it stays.
+            UpdateCommands(controller: application.updates)
         }
     }
 }
