@@ -1,0 +1,77 @@
+{
+  "Mises à jour": {
+    "en": "Updates", "de": "Updates", "it": "Aggiornamenti", "es": "Actualizaciones"
+  },
+  "Recherche d'une mise à jour…": {
+    "en": "Checking for updates…", "de": "Suche nach Updates …", "it": "Verifica degli aggiornamenti…", "es": "Buscando actualizaciones…"
+  },
+  "%@ est à jour.": {
+    "en": "%@ is up to date.", "de": "%@ ist auf dem neuesten Stand.", "it": "%@ è aggiornato.", "es": "%@ está actualizado."
+  },
+  "Version installée : %@": {
+    "en": "Installed version: %@", "de": "Installierte Version: %@", "it": "Versione installata: %@", "es": "Versión instalada: %@"
+  },
+  "Une nouvelle version de %@ est disponible.": {
+    "en": "A new version of %@ is available.", "de": "Eine neue Version von %@ ist verfügbar.", "it": "È disponibile una nuova versione di %@.", "es": "Hay una nueva versión de %@ disponible."
+  },
+  "Nouvelle version : %@": {
+    "en": "New version: %@", "de": "Neue Version: %@", "it": "Nuova versione: %@", "es": "Nueva versión: %@"
+  },
+  "Notes de version": {
+    "en": "Release Notes", "de": "Versionshinweise", "it": "Note di uscita", "es": "Notas de la versión"
+  },
+  "Arrêtez ce qui est en cours avant d'installer.": {
+    "en": "Stop what is running before installing.", "de": "Stoppe vor der Installation alles, was gerade läuft.", "it": "Interrompi ciò che è in corso prima di installare.", "es": "Detén lo que esté en curso antes de instalar."
+  },
+  "Ignorer cette version": {
+    "en": "Skip This Version", "de": "Diese Version überspringen", "it": "Salta questa versione", "es": "Omitir esta versión"
+  },
+  "Plus tard": {
+    "en": "Later", "de": "Später", "it": "Più tardi", "es": "Más tarde"
+  },
+  "Télécharger et installer": {
+    "en": "Download and Install", "de": "Laden und installieren", "it": "Scarica e installa", "es": "Descargar e instalar"
+  },
+  "Téléchargement…": {
+    "en": "Downloading…", "de": "Laden …", "it": "Scarico…", "es": "Descargando…"
+  },
+  "Vérification du paquet…": {
+    "en": "Verifying package…", "de": "Paket wird überprüft …", "it": "Verifica del pacchetto…", "es": "Verificando el paquete…"
+  },
+  "L'installateur est ouvert.": {
+    "en": "The installer is open.", "de": "Das Installationsprogramm ist geöffnet.", "it": "Il programma di installazione è aperto.", "es": "El instalador está abierto."
+  },
+  "Quittez %@, puis suivez les étapes de l'installateur. Rouvrez l'application ensuite.": {
+    "en": "Quit %@, then follow the steps of the installer. Open the app again afterwards.",
+    "de": "Beende %@ und folge dann den Schritten des Installationsprogramms. Öffne die App danach wieder.",
+    "it": "Esci da %@, poi segui i passaggi del programma di installazione. Riapri l’app al termine.",
+    "es": "Sal de %@ y sigue los pasos del instalador. Después, vuelve a abrir la app."
+  },
+  "Quitter %@": {
+    "en": "Quit %@", "de": "%@ beenden", "it": "Esci da %@", "es": "Salir de %@"
+  },
+  "La mise à jour a échoué.": {
+    "en": "The update failed.", "de": "Das Update ist fehlgeschlagen.", "it": "Aggiornamento non riuscito.", "es": "No se ha podido actualizar."
+  },
+  "Impossible de joindre GitHub.": {
+    "en": "Can’t reach GitHub.", "de": "GitHub ist nicht erreichbar.", "it": "Impossibile raggiungere GitHub.", "es": "No se puede conectar con GitHub."
+  },
+  "Le paquet téléchargé est corrompu.": {
+    "en": "The downloaded package is damaged.", "de": "Das geladene Paket ist beschädigt.", "it": "Il pacchetto scaricato è danneggiato.", "es": "El paquete descargado está dañado."
+  },
+  "Le paquet n'est pas signé et notarisé par l'auteur.": {
+    "en": "The package is not signed and notarized by its author.", "de": "Das Paket ist nicht vom Autor signiert und notarisiert.", "it": "Il pacchetto non è firmato e notarizzato dall’autore.", "es": "El paquete no está firmado ni notarizado por su autor."
+  },
+  "Page des versions": {
+    "en": "Releases Page", "de": "Seite der Versionen", "it": "Pagina delle versioni", "es": "Página de versiones"
+  },
+  "Réessayer": {
+    "en": "Try Again", "de": "Erneut versuchen", "it": "Riprova", "es": "Inténtalo de nuevo"
+  },
+  "Rechercher automatiquement les mises à jour": {
+    "en": "Check for updates automatically", "de": "Automatisch nach Updates suchen", "it": "Verifica automaticamente gli aggiornamenti", "es": "Buscar actualizaciones automáticamente"
+  },
+  "Rechercher les mises à jour…": {
+    "en": "Check for Updates…", "de": "Nach Updates suchen …", "it": "Verifica aggiornamenti…", "es": "Buscar actualizaciones…"
+  }
+}
