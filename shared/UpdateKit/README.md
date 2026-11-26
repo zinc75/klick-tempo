@@ -31,7 +31,7 @@ let updates = UpdateController(
 updates.startAutomaticChecks()       // at launch
 ```
 
-and, in the scene, `.commands { UpdateCommands(controller: updates) }`, which adds "Check for Updates…" under "About".
+and, in the scene, `UpdateCommands(controller: updates)`, which adds "Check for Updates…" under "About". It goes in the `.commands` block of `CollectionMenus`, after it: `CollectionMenus` replaces the "About" group, which drops what an earlier `.commands` block has added to it.
 
 The texts are looked up in the string catalog of the application, as those of the other kits are (the keys are the French texts). `Strings/Localizable.fragment.json` has them in French, English, German, Italian and Spanish; `python3 -I Strings/merge_strings.py <Localizable.xcstrings>` adds the ones a catalog does not have yet. The catalog must have "Fermer" and "révision" (the About panel needs them too).
 

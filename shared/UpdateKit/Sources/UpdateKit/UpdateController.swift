@@ -87,12 +87,13 @@ public final class UpdateController: ObservableObject {
     /// A newer version that the person did not skip opens the panel; anything else (up to date, no network) stays silent.
     public func startAutomaticChecks(after delay: TimeInterval = 5) {
         #if DEBUG
-        // Development aids: UPDATEKIT_MENU=1 does what the menu item does at launch, UPDATEKIT_AUTOINSTALL=1 installs the offer that is made.
+        // Development aids: UPDATEKIT_MENU=1 chooses the item of the menu bar at launch (and says in the log where it found it),
+        // UPDATEKIT_AUTOINSTALL=1 installs the offer that is made.
         let environment = ProcessInfo.processInfo.environment
         if environment["UPDATEKIT_MENU"] != nil {
             Task {
                 try? await Task.sleep(for: .seconds(delay))
-                checkFromMenu()
+                Self.chooseMenuItem()
             }
             return
         }
@@ -155,6 +156,23 @@ public final class UpdateController: ObservableObject {
         phase = .available(offer)
         if !manual { showPanel() }
     }
+
+    #if DEBUG
+    /// Chooses "Check for Updates…" in the menu bar, as a click would, to see that the item is in the menu of the application.
+    private static func chooseMenuItem() {
+        let title = String(localized: "Rechercher les mises à jour…")
+        for top in NSApp.mainMenu?.items ?? [] {
+            guard let menu = top.submenu, let index = menu.items.firstIndex(where: { $0.title == title }) else { continue }
+            NSLog("UpdateKit: item '%@' found in the menu '%@', at %d", title, menu.title, index)
+            menu.performActionForItem(at: index)
+            return
+        }
+        NSLog("UpdateKit: no item '%@' in the menu bar", title)
+        for top in NSApp.mainMenu?.items ?? [] {
+            NSLog("UpdateKit: menu '%@': %@", top.submenu?.title ?? "?", (top.submenu?.items.map { $0.isSeparatorItem ? "-" : $0.title } ?? []).joined(separator: " | "))
+        }
+    }
+    #endif
 
     private var feedURL: URL {
         #if DEBUG

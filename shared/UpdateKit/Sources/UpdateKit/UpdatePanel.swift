@@ -179,6 +179,7 @@ struct UpdateView: View {
         case .idle, .checking, .upToDate, .downloading, .verifying:
             Button(String(localized: "Fermer"), action: close)
                 .keyboardShortcut(.defaultAction)
+                .accentTint()
         }
     }
 }
